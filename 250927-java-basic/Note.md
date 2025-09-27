@@ -1,0 +1,158 @@
+- 클래스 = 사용자 정의 타입이다.
+- 클래스에 정의한 변수들을 멤버 변수=필드라 한다.
+- 객체=인스턴스 = 클래스를 사용해 실제 메모리에 만들어진 실체
+- new Student();로 실제 메모리에 만들고 참조 주소 반환한다.
+- Student student1 =이 참조값(2f4d3709) 보관한다.
+- student1 출력하면 class1.Student@2f4d3709가 나온다.
+- class1.Student는 패키지.클래스 정보다.
+- 클래스는 객체를 생성하기 위한 틀=설계도이다.
+- 클래스는 객체가 가지는 속성(변수), 기능(메서드)를 정의한다.
+- 객체는 실체이고 서로 독립적인 상태를 가진다. (서로 다른 객체)
+- 인스턴스는 특정 클래스로부터 생성된 객체를 말한다.
+- s1 객체는 S클래스의 인스턴스다. 라고 관계 강조할 때 사용한다.
+- ctrl + space: 자동 완성 단축키
+- students[2] 출력: null //클래스 배열에 객체 할당 안 하면 참조값 null
+- students[0] = student1; //인스턴스 복사가 아니라 참조값 복사다.
+- 모든 Java 클래스는 자동으로 Object 클래스를 상속받는다.
+- public String toString() //Object 클래스의 메서드. 객체를 문자열로 표현 시 호출된다.
+- getClass().getName() + "@" + Integer.toHexString(hashCode()) // 기본 구현
+- System.out.println(someObject); -> someObject.toString(); 값을 출력
+- Java에서는 메모리 주소에 직접 접근할 수 없고, 변수명을 통해 간접적으로 접근
+- 실제 변수명이 아니라 toString() 출력에서 얻은 참조값이기 때문에, 코드 상에서 접근 불가
+- public int hashCode() //Object 클래스에 있는 메서드. 객체의 해시값을 반환
+- 메모리 주소: JVM 내부에서 객체가 실제로 존재하는 위치 (개발자가 직접 접근할 수 없음)
+- 해시코드: 객체를 식별하기 위한 숫자 (논리적인 ID 역할)
+- student1 출력: class1.Student@2f4d3709
+- students[0] 출력: class1.Student@2f4d3709
+- students 출력: [Lclass1.Student;@7291c18f
+- toHexString으로 16진수 표시하니까 주소처럼 보이지만 아니다. 주소는 JVM 내부에서 관리된다.
+- Student student1 = {"학생1", 1, 2}; //안 된다.
+- Java는 객체 생성 시 반드시 클래스의 생성자를 호출해야 한다.
+- 중괄호 {}는 배열이나 컬렉션 초기화에만 사용 가능
+- new도 필요하다. new는 배열 선언&초기화, 프레임워크 자동 바인딩에서만 생략 시 자동 사용
+- Student student1 = new Student("학생1", 1, 2); //된다.
+- required: no arguments, found: java.lang.String,int,int //컴파일 오류
+- 클래스에 생성자를 정의하지 않으면 기본 생성자 public Student() {}만 생성된다.
+- 클래스에 생성자를 정의하면, 기본 생성자를 만들지 않는다. (호출 시 컴파일 오류)
+- 기본형은 소문자로 시작, 참조형은 대문자로 시작한다.
+- 기본형: int, double, char, boolean, byte, short, long, float
+- 기본형: 값을 변수에 담고 바로 사용. 기본형은 성능이 좋다.
+- 기본형: 객체가 아니다. 즉, Object를 상속받지 않는다.
+- int a = 5;
+- System.out.println(a instanceof Object); //컴파일 에러
+- 기본형: new로 생성할 수 없고, 메서드를 가질 수 없다.
+- 기본형: 지역 변수 등 스택에 저장되는 경우가 많다.
+- 기본형: 객체로 쓰고 싶을 때 Wrapper Class를 사용한다. (박싱이라고 한다.)
+- 참조형: 클래스(사용자 정의 객체), 배열, 인터페이스/추상클래스, String 등
+- 참조형: 참조값을 저장하며, 참조값을 연산할 수 없다.
+- 참조형: 배열도 여러 값을 담는 객체다.
+- 참조형: Object를 상속받고, new가 동작하고, 힙 메모리에 객체로 저장된다.
+- int[] numbers = {1, 2, 3};
+- System.out.println(numbers instanceof Object); //true
+- System.out.println(numbers.getClass()); //class [I
+- 참조형: String도 Object를 상속한 클래스다.
+- 참조형: 문자열 리터럴이 String Constant Pool에 저장된다.
+- String name = "이름"; -> new String("이름");과 유사함 (Pool로 성능 최적화)
+- 참조형: String은 자바에서 자주 쓰여서, + 연산 가능하고 자동 toString() 호출된다.
+- 참조형: String도 Object를 상속한 클래스다.
+- 참조형: String은 불변 객체(immutable) 라서 한 번 만들면 수정되지 않는다.
+- 참조형: "abc" == "abc" → true, 같은 리터럴은 JVM이 공유함
+- 참조형: new String("abc")와 "abc"는 == 비교 시 false 될 수도 있다.
+- Data a = new Data();, Data b = a;
+- a = ref.Data@27973e9b, b = ref.Data@27973e9b // a와 b는 동일한 객체를 참조
+- a.value와 b.value는 같은 메모리 공간의 데이터를 읽고 쓴다. (a.value == b.value)
+- 메서드: 호출할 때 사용하는 매개변수도 변수다. 매개변수의 값도 복사해서 전달한다.
+- 메서드에 참조형을 전달하고 메서드에서 값을 변경하면 반영된다.
+- 메서드에 기본형을 전달하고 메서드에서 값을 변경하면 반영되지 않는다.
+- 변수: 멤버 변수(필드, 클래스에 선언), 지역 변수(메서드에 선언, 매개변수도 지역 변수)
+- Student student1; //student1은 지역 변수다.
+- 지역 변수는 수동 초기화
+- 멤버 변수는 자동 초기화 //숫자 = 0, boolean = false, 참조형 = null
+- null은 참조할 대상이 없다는 의미
+- Data x = new Data();, x = null;
+- System.out.println(x); //null
+- System.out.println(x.value); //런타임 오류 NullPointerException
+- new Data();로 만들었던 Data 인스턴스는 JVM의 GC가 정리한다.
+- x = ref.Data@312b1dae; <- 이렇게는 안 된다.
+- 지역 변수는 null 여부가 명확하게 보인다.
+- Data x = null;도 지역 변수다.
+- 지역 변수는 메서드 안에서만 존재, 초기화 위치가 바로 보이기 때문
+- 멤버 변수는 언제 null인지 추적이 어렵다.
+- BigData a = new BigData();
+- a.data //null, data는 Data data;라는 BigData의 멤버 변수
+- class BigData { Data data; } //멤버 변수 선언만 하고, 객체 안 만듦
+- a.data.value //NullPointerException
+- class BigData2 { Data data = new Data(); } //객체의 변수 초기화됨
+- BigData2 b = new BigData2();
+- b.data.value //0
+- BigData2 b = new BigData(); //컴파일 오류
+- ProductOrder[] orders = new ProductOrder[n];
+- orders[i].name = "이름"; //NullPointerException
+- ProductOrder 객체를 n개 생성한 게 아니라, 참조 변수 n개인 배열 만든 거다.
+- orders = [null, null, null, ...]처럼 배열 요소들이 초기값 상태로 존재한다.
+- for (ProductOrder o : orders) { o = new ProductOrder(); } //배열 안 바뀐다.
+- ProductOrder o는 for-each 반복 중 한 번씩 새로 만들어지는 지역 변수다.
+- 반복마다 orders[i] 값인 null을 복사해서 o에 저장한다.
+- o가 가리키는 참조는 새로운 객체를 만들어도 배열에는 영향을 주지 않는다.
+- orders[i] = new ProductOrder();처럼 orders[i]에 직접 할당하게 할 수 있다.
+- orders[i] = createOrder(a, b, c);처럼 메서드에서 객체 생성 및 반환하게 할 수 있다.
+- for (ProductOrder o : orders) { o.name = "1"; } //객체의 name이 "1"로 바뀐다.
+- 반복마다 orders[i] 값을 복사해서 지역 변수 o에 저장하는 건 같다.
+- o가 가리키는 참조와 .(dot)으로 객체의 멤버 변수에 접근한 것이어서 바뀐다.
+- 배열의 orders[i] 값에는 변화가 없다.
+- 즉, NullPointerException은 null 값을 가진 참조 변수로 멤버 접근 시 발생한다.
+- f2: 다음 오류로 이동하는 단축키
+- 클래스 메서드: static 있다. 객체 필요 없이 클래스 이름으로 바로 호출 가능하다. Math.abs();
+- 인스턴스 메서드: static 없다. 객체 필요하다. input.nextInt();
+- main 함수 안에서 사용하는 static 메서드는 클래스 메서드이다.
+- 클래스 메서드 = 정적 메서드이다. 객체(인스턴스) 없이 호출 가능하다.
+- main 함수 자체도 static이라서 같은 레벨의 static 메서드만 직접 호출 가능하다.
+- Java 프로그램은 클래스가 실행될 때 아직 객체가 없는 상태에서 시작되므로,
+- JVM이 클래스 이름만 보고 실행할 수 있도록 static 메인 함수가 필요하다.
+- 클래스가 메모리에 올라가자마자 객체 없이도 호출 가능 = static이 필수다.
+- JAVA는 메서드 안에 또 다른 메서드를 정의할 수 없다. //컴파일 오류
+- main 함수가 사용하는 static 메서드: 같은 클래스는 메서드 이름으로 호출
+- main 함수가 사용하는 static 메서드: 다른 클래스는 클래스명.메서드명으로 호출
+- 객체 지향은 모든 사물을 속성과 기능을 가진 객체로 생각하는 것이다.
+- 실세계와 객체가 항상 1:1로 매칭되지는 않는다.
+- 캡슐화: 객체의 속성(데이터)과 그 속성을 다루는 기능(메서드)을 하나로 묶어서 관리
+- 자동 생성되는 기본 생성자는 디컴파일에서 안 보인다.
+- 그래도 컴파일러가 public MemberInit() {}처럼 클래스 안에 기본 생성자 만든다.
+- 객체 메서드에서 멤버 변수도 있고, 매개변수도 있다. 둘의 이름이 같을 수 있다.
+- 같으면 매개변수로 우선 접근하게 된다. 이때 멤버 변수를 지칭하려면 this.를 붙인다.
+- 이름이 같은데 this.를 안 붙이고 age = age; 하면 멤버 변수 age에는 적용이 안 된다.
+- 생성자의 이름은 클래스와 같아야 한다. 첫 글자를 대문자로 시작한다.
+- 생성자는 반환 타입이 없다. void도 안 적는다. 나머지는 메서드와 같다.
+- new MemberInit(); //()는 생성자를 호출한다는 의미이다.
+- 생성자를 메서드 오버로딩처럼 여러 개 정의할 수 있다. //다른 거 호출하면 컴파일 오류
+- MemberConstruct(String name, int age, int grade) {
+- this.name = name; this.age = age; this.grade = grade; }
+- MemberConstruct(String name, int age) { this(name, age, 50); }
+- 생성자 체이닝이라고 한다.
+- this();는 객체 지칭이 아닌 명령어 역할(생성자 위임)이다.
+- this();는 생성자 내부에서만, 가장 첫 줄에서만 쓸 수 있다.
+- 다른 상황에서 (생성자 기타 상황, 메서드) this.는 현재 객체 자신을 가리키는 참조값이다.
+- 다른 패키지에서 클래스의 생성자를 호출하려면 public 생성자여야 한다.
+- pack에 Data 클래스가, pack.a에 User 클래스가 있다.
+- pack에 PackMain에서 Data, User 생성자 호출하려면 import pack.a.User; 입력해야 한다.
+- import a.User;은 안 된다.
+- import 대신 pack.a.User user2 = new pack.a.User();처럼 써도 된다.
+- import를 사용하면 다른 패키지에 있는 클래스를 쓸 수 있다.
+- 특정 패키지에 포함된 모든 클래스를 사용하려면 import pack.a.*;처럼 쓰면 된다.
+- PackMain에서 import pack.*; 쓴다고 해서 pack.a.User를 쓸 수 없다.
+- PackMain2는 pack.a의 클래스라면, import pack.*; 해서 pack.Data 쓸 수 있다.
+- pack과 pack.a의 상위-하위 구분은 없다. 서로 다른 패키지이다.
+- 디렉터리 구조는 상위-하위지만, Java 컴파일러나 JVM 입장에서 별도의 패키지이다.
+- 클래스 구분은 패키지+클래스 이름으로 (전체 경로로) 한다.
+- SameName이 pack, pack.a, pack.b에 있다고 하자.
+- pack.a의 PackMain2에서 pack을 import한다. pack.a.SameName이 우선 호출된다.
+- BExample이 pack, pack.b에 있다고 하자.
+- pack.a의 PackMain2에서 둘 다 *로 import한다. ambiguous 컴파일 오류 난다.
+- 보통은 자주 사용하는 클래스의 패키지를 import하고 나머지는 명시한다.
+- 패키지 이름 모두 소문자 (대소문자 구분 안 하는 os가 있다.)
+- 패키지 이름 앞 부분에는 보통 회사 도메인 이름을 거꾸로 사용
+- com.helloshop.user: User, UserService
+- com.helloshop.product: Product, ProductService
+- com.helloshop.order: Order, OrderService, OrderHistory
+- Order는 com.helloshop.product.Product, com.helloshop.user.User를 import한다.
+---
