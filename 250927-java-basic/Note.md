@@ -282,9 +282,10 @@
 - 애노테이션이 없어도 동작한다. 애노테이션이 있으면 컴파일러가 오버라이딩이 안 됐을 때 오류를 내니까 쓴다.
 - 메서드 오버로딩: 메서드 이름이 같고 패러미터가 다른 메서드를 여러 개 정의한다. 오버라이딩과 다르다.
 - 메서드 오버라이딩 조건: 이름, 파라미터가 같고 반환 타입이 같아야 한다.
-- 반환 타입이 하위 클래스 타입일 수도 있다.
+- 반환 타입이 하위 클래스 타입일 수도 있다. (부모가 부모를 반환했다면, 자식은 오버라이딩해서 자식 반환 가능)
 - 메서드 오버라이딩 조건: 접근 제어자가 상위 클래스의 메서드보다 제한적이어서는 안 되고, 같거나 더 넓어야 한다.
 - 상위 클래스에서 protected였다면, 재정의는 public/protected로만 된다. private/default로 할 수 없다.
+- 코드 일관성(부모의 의도)과 다형성(Parent p = new Child(); p.doSomething();) 보장을 위해서다.
 - 상위 클래스의 메서드보다 적거나 같은 수의 예외, 또는 하위 타입의 예외만 throws로 선언할 수 있다.
 - static, final, private 키워드가 붙은 메서드는 오버라이딩을 할 수 없다.
 - static은 클래스에서 작동하는데 오버라이딩은 인스턴스에서 사용한다.
@@ -298,7 +299,124 @@
 - Child를 생성하면 Child와 Parent의 생성자가 모두 호출된다. (생성자가 상속되는 건 아니다. 오버라이딩도 x)
 - 이때 Child의 생성자에서 super(...)로 Parent의 생성자를 반드시 호출해야 한다.
 - 호출하지 않아도 super();가 자동 실행되지만, Parent 생성자에 패러미터가 있으면 컴파일 에러 난다.
-- Child에서 생성자 체이닝의 this(...)를 첫 줄에 썼다면 다음에 super(...)를 쓰도록 한다.
+- super(...)는 반드시 Child 생성자 첫 줄에서 써야 한다. (생성자 호출 순서: 부모 -> 자식 순)
+- Child에서 생성자 체이닝의 this(...)를 썼다면, this(...)로 간 생성자의 첫 줄에 super(...)를 쓴다.
+- super(...)가 두 번 실행되면 안 된다.
 - 오버라이드 단축키: ctrl + o
 - 클래스에 final을 붙이면 상속받을 수 없다. 메서드에 final을 붙이면 오버라이딩 할 수 없다.
+---
+- 객체지향 프로그래밍 특징 - 캡슐화, 상속, 다형성
+- 다형성: 한 객체가 여러 타입의 객체로 취급될 수 있는 것
+- 보통 한 객체는 하나의 타입으로 고정되어 있는데, 다형성을 사용하면 한 객체가 다른 타입으로도 사용될 수 있다.
+- 다형성 - 다형적 참조, 메서드 오버라이딩
+- 1. Parent p = new Parent(); //Parent 인스턴스를 생성하고 Parent 타입으로 참조
+- 2. p.pMethod(); //가능: p는 Parent 타입이고, Parent 클래스의 메서드를 호출할 수 있음
+- 3. p.cMethod(); //불가: p는 Parent 타입이므로 Child 클래스에 정의된 메서드는 알 수 없음 (컴파일 오류)
+- Parent 타입 참조변수는 Parent 클래스의 멤버만 접근 가능하다.
+- Heap 영역: Parent 타입의 객체가 생성됨. 객체에는 pMethod() 등 인스턴스 멤버가 포함됨.
+- Stack 영역: 참조변수 p가 생기고, 이 p는 Heap에 있는 Parent 객체를 가리킴.
+- 1. Child c = new Child(); //Child 인스턴스를 생성하고 Child 타입으로 참조 (상속된 Parent 멤버도 포함)
+- 2. c.pMethod(); //가능: Child는 Parent를 상속하므로 pMethod() 사용 가능
+- 3. c.cMethod(); //가능: Child에 정의된 메서드도 호출 가능
+- Child 타입은 상속받은 Parent의 멤버와 자신의 멤버 모두 접근 가능하다.
+- Heap 영역: Child 객체 생성됨. Child는 Parent를 상속받으므로, 내부에 Parent의 멤버들도 함께 존재함.
+- Stack 영역: 참조변수 c가 생기고, Heap의 Child 객체를 가리킴.
+- 자바는 내부적으로 Child 객체를 만들 때 Parent 부분도 함께 구성됨. "is-a 관계" 때문.
+- 1. Parent p2 = new Child(); //Child 인스턴스를 생성하지만 Parent 타입으로 참조 (업캐스팅)
+- 2. p2.pMethod(); //가능: p2는 Parent 타입이므로 Parent의 메서드 호출 가능
+- 3. p2.cMethod(); //불가: p2는 Parent 타입이므로 Child에 정의된 메서드는 알 수 없음 (컴파일 오류)
+- 업캐스팅된 경우, 인스턴스는 Child지만 참조는 Parent 타입이므로 Parent의 멤버만 접근 가능하다.
+- Heap 영역: Child 객체 생성됨 → 내부에 Parent + Child 멤버 포함.
+- Stack 영역: 참조변수 p2는 Parent 타입 → Heap의 Child 객체를 Parent처럼만 다룸.
+- 그러나, 실제 객체는 Child다. 그래서 오버라이딩된 메서드는 동적 바인딩에 의해 Child의 구현체가 실행된다.
+- Child c2 = new Parent(); //Parent 인스턴스를 Child 타입으로 참조할 수 없음 (다운캐스팅 불가)
+- 자식 타입으로 부모 인스턴스를 참조하는 건 안 된다. 메모리 구조상 Parent에는 Child의 멤버가 없어 불가능하다.
+- 자바는 부모 -> 자식 변환을 명시적으로 하지 않으면 허용x. 명시해도 Child 멤버가 없으면 런타임 오류 난다.
+- Child c2 = new Parent(); //암시적 다운캐스팅 시도. 컴파일 오류 난다.
+- Parent p = new Parent(); Child c = (Child) p; //명시적 다운캐스팅 시도. 런타임 ClassCastException
+- 1. Parent p = new Child(); //업캐스팅을 암시적으로 했다. 자식 -> 부모 변환은 자동으로 허용.
+- 2. Child c = (Child) p; //명시적 다운캐스팅 (실제 인스턴스가 Child이기 때문에 안전)
+- 부모 타입 변수는 자식, 손자들의 객체를 참조할 수 있다. 다양한 형태를 참조 = 다형적 참조라고 한다.
+- Parent 변수명.으로 멤버에 접근할 때 메모리의 Parent 부분에서 시작해서 찾는다.
+- 그런데 상속 관계는 부모 방향으로 올라갈 수 있지만 자식 방향으로 내려갈 수 없다.
+- Parent poly = new Child(); //암시적 업캐스팅
+- poly.cMethod(); //찾을 수 없어서 컴파일 오류 난다.
+- poly가 cMethod();를 호출하려면 (캐스팅)이 필요하다.
+- 업캐스팅: 부모 타입으로, 다운캐스팅: 자식 타입으로 변경
+- Child c3 = (Child) poly; //명시적 다운캐스팅 후 Child 타입 변수에 담았다.
+- ((Child) poly).cMethod(); //명시적 다운캐스팅을 일시적으로 했다. (괄호 필수).cMethod();
+- a instanceof B - 객체 a가 클래스 B의 인스턴스인지를 체크
+- new Parent();로 생성한 참조값: instanceof Parent == true, instanceof Child == false
+- new Child();로 생성한 참조값: instanceof Parent == instanceof Child == true
+- (new Parent() instanceof Parent) == true, (new Parent() instanceof Child) == false
+- (new Child() instanceof Parent) == (new Child() instanceof Child) == true
+- 런타임 예외 방지하려고, (Child) poly; 전에 (poly instanceof Child)가 true인지 확인한다.
+- 오버라이딩: 멤버 변수는 안 되고, 메서드는 된다.
+- 1. Child child = new Child(); Parent poly = child; //다형적 참조
+- 2. System.out.println("child.value = " + child.value); //"child"
+- 3. child.method(); //"child method"
+- 4. System.out.println("poly.value = " + poly.value); //"parent" 오버라이딩 안 됨.
+- 5. poly.method(); //"child method" 오버라이딩 됨.
+- 오버라이딩 된 메서드는 항상 우선 호출된다.
+- 6. Parent poly2 = new GrandChild(); //다형적 참조, GrandChild extends Child
+- 7. poly2.method(); //"grandChild method" 손자도 오버라이딩 됨.
+- Child2 extends Parent 추가 시
+- 1. Parent poly3 = new Child2(); //업캐스팅 된다.
+- 2. Child poly4 = new Child2(); //컴파일 오류
+- 3. GrandChild poly5 = (GrandChild)(new Child2()); //컴파일 오류
+- 4. GrandChild poly6 = (GrandChild)(new Child()); //다운캐스팅 컴파일 되지만
+- 5. poly6.method(); //런타임 오류 난다.
+- introduce variable 단축키: ctrl + alt + v (new Dog();에서 Dog dog = 생성)
+- extract method 단축키: ctrl + alt + m
+- Animal이라는 클래스.. 다형성 활용에는 유용하나, 객체를 생성해 쓸 일은 없다.
+- Cat에서 Animal의 sound()를 오버라이딩하지 않으면 Animal의 sound()가 호출될 것이다.
+- 추상 클래스, 추상 메서드로 프로그램에 제약을 줄 수 있다. (abstract 키워드)
+- public abstract class AbstractAnimal { }
+- 추상 클래스는 실체인 인스턴스를 생성할 수 없고, 상속을 목적으로 만들어진 클래스다.
+- public abstract void sound();
+- 추상 메서드는 실행 코드가 없고 (메서드 바디가 없음), 자식 클래스가 오버라이딩해야 하는 메서드다.
+- 추상 메서드가 하나라도 있으면 추상 클래스로 선언해야 한다. //아니면 컴파일 오류 발생
+- 자식 클래스가 추상 메서드를 오버라이딩하지 않으면 컴파일 오류 발생
+- @Override public void sound() { System.out.println("짹"); } //여기 abstract 쓰면 안 됨
+- 추상 -> 일반1 -> 일반2 상속 된다. 추상1 -> 추상2 -> 일반 상속 된다.
+- 추상 클래스에는 추상 메서드가 하나라도 있으면 되고, 추상1의 추상 메서드를 추상2나 일반에서 구현한다.
+- 일반 클래스만 인스턴스화가 가능하다.
+- 모든 메서드가 추상 메서드인 클래스를 순수 추상 클래스라고 한다.
+- 기능을 물려준다기 보다는 규격에 맞춰 구현하도록 하는 (인터페이스) 역할을 한다.
+- 인터페이스: 순수 추상 클래스를 대신한다. interface 키워드 사용
+- 최상위 인터페이스, 최상위 클래스는 모두 기본이 default이고, default 아니면 public만 쓸 수 있다.
+- 인터페이스의 메서드는 기본적으로 public abstract다. public abstract는 생략이 권장된다.
+- 인터페이스는 계약(Contract)이다. 다른 클래스들이 해당 인터페이스를 구현해야 하므로, 접근 가능해야 한다.
+- 최상위(파일 수준) 인터페이스는 public, default(package-private)를 사용할 수 있다.
+- class 내부 인터페이스 (중첩 인터페이스)는 protected, private도 사용할 수 있다.
+- 클래스 implements 인터페이스1, 인터페이스2: 인터페이스는 다중 구현을 지원한다.
+- 인터페이스 멤버 변수는 모두 public static final이다. MY_PI처럼 변수명을 대문자로 짓는다.
+- static 변수 (상수): 모두 클래스 로딩 시 메서드 영역에 한 번 생성돼서 공유된다.
+- 클래스가 처음 로딩될 때, 인터프리터나 JIT 컴파일러가 클래스 정보와 static 변수를 로딩한다.
+- 인터페이스도 .class 파일로 컴파일되고, JVM에 로딩되면 java.lang.Class 타입으로 처리된다.
+- 인터페이스 메서드: public abstract(기본값), public static, public default가 가능하다.
+- public 생략해도 자동으로 붙는다. public default의 default는 접근 제어자x 메서드 키워드다.
+- public abstract 메서드: 구현 없는 추상 메서드
+- public static 메서드: 인터페이스명으로 호출하는 정적 메서드
+- public default 메서드: 자식 클래스에서 물려받을 수 있는 기본 구현
+- protected 메서드는 안 되는데 private 메서드는 내부 헬퍼 용도로 허용된다.
+- UML에서 클래스 상속 관계는 실선을, 인터페이스 구현 관계는 점선을 사용한다.
+- public abstract 메서드를 클래스에서 구현할 때, public이라고 써야 한다.
+- 오버라이딩할 때는 더 좁은 접근 제어자를 사용할 수 없기 때문이다. @Override도 적는다.
+- 인터페이스의 다중 구현을 허용한 이유는, 인터페이스가 추상 메서드로 이루어져 있기 때문이다.
+- 상속과 인터페이스를 모두 활용할 수 있다. AbstractAnimal 클래스에 sound(), move()가 있다.
+- Dog, Bird가 상속받는다. 이중에 Bird는 Fly 인터페이스를 구현한다.
+- 객체 지향 특징 - 추상화, 캡슐화, 상속, 다형성 (Polymorphism)
+- 역할(인터페이스)과 구현(클래스, 객체)을 분리: 자동차 역할, K3 구현, 아반떼 구현
+- 운전자 역할에서 볼 때, 자동차 역할만 보기 때문에, K3과 아반떼의 구현이 달라도 어떤 자동차든 탈 수 있다.
+- 다형성의 실세계 비유: 운전자/자동차, 공연무대, 표준인터페이스들, 정렬알고리즘, 할인정책로직
+- 클라이언트는 대상의 역할(인터페이스)만 알면 되고, 내부 구조를 변경해도 되고, 구현 대상을 변경해도 된다.
+- 클라이언트=요청, 서버=응답, 수많은 객체 클라이언트-객체 서버가 서로 협력하는 관계이다.
+- 클라이언트->서버(다음 서버의 클라이언트)->서버
+- OCP(Open-Closed Princlple)
+- Open for extension: 새로운 기능 추가나 기능 변경이 생겼을 때, 기존 코드는 확장할 수 있어야 한다.
+- Closed for modification: 기존 코드는 변경되지 않아야 한다.
+- 인터페이스를 사용하는 클라이언트의 코드, main()의 코드 변경이 적어야 한다.
+- 다형성의 핵심은 동일한 인터페이스 변수가 런타임에 어떤 구현 객체를 참조하느냐에 따라 다른 동작을 한다는 것입니다.
+- 이를 통해 클라이언트는 변경 없이 다양한 서버 구현과 상호작용할 수 있습니다.
 ---

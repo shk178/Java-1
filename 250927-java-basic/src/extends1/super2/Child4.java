@@ -16,8 +16,9 @@ public class Child4 extends Parent4 {
         hello();
         super.hello();
     }
-    Child4() {
-        //super();
-        this.init = 1;
+    /*
+    Child4(int i) {
+        System.out.println("Child 생성");
     }
+     */
 }
