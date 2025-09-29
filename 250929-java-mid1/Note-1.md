@@ -1,0 +1,110 @@
+# Object 클래스
+- java.object 패키지 - 자바에서 자동으로 import되는 패키지
+- Object 클래스: 모든 자바 클래스의 최상위 부모
+- public class MyClass { } //자동으로 extends Object가 생략되어 있음
+- MyClass obj = new MyClass();
+- obj.toString(); //객체를 문자열로
+- obj.object.equals(other); //객체 비교
+- obj.hashCode(); //해시코드 반환
+- obj.getClass(); //클래스 정보 반환
+- String 클래스: 문자열을 다루는 클래스, 불변(immutable) 객체
+- Wrapper 타입: 기본형(primitive)을 객체로 감싸는 클래스
+- Integer num = 10; //래퍼 타입 (오토박싱)
+- 컬렉션에는 객체만 저장 가능하다: List<Integer> (○), List<int> (×)
+- null 값을 표현해야 할 때
+- 유틸리티 메서드 사용 위해
+- Class 클래스: 클래스의 메타 정보(설계도의 정보)를 담는 클래스
+- public class Person { private String name; public void hello() {} }
+- Class<Person> clazz1 = Person.class; //Class 객체 얻기
+- String className = clazz1.getName(); //Class 정보 조회 "Person"
+- 메서드, 필드 정보 조회 (리플렉션)
+- Person person = clazz1.getDeclaredConstructor().newInstance(); //객체 생성
+- System 클래스: 시스템 레벨의 기능을 제공하는 유틸리티 클래스
+- 표준 입출력, 현재 시간 (밀리초), 성능 측정용 시간 (나노초)
+- String javaVersion = System.getProperty("java.version"); //시스템 속성
+- System.arraycopy(srcArr, 0, destArr, 0, 3); //배열 빠른 복사
+- System.gc(); System.exit(0); //가비지 컬렉션 제안, 프로그램 종료
+- soutm 단축키: 클래스명.메서드명 출력
+- "extends 클래스"가 없으면 묵시적으로 Object 클래스를 상속받는다. (최상위 부모 Object)
+- 1. Child child = new Child(); Child child2 = new Child(); Parent poly = child;
+- 2. System.out.println(child.toString()); //object.Child@4e50df2e
+- 3. System.out.println(child.object.equals(child2)); //false
+- 4. System.out.println(child.object.equals(poly)); //true
+- 5. System.out.println(child.hashCode()); //1313922862
+- 6. System.out.println(child.getClass()); //class object.Child
+- new Object();로 인스턴스 만들 수 있다.
+- Object는 모든 객체를 다 참조할 수 (담을 수) 있다. 다형성 지원하는 기본 메커니즘 제공
+- 하지만 Object로 업캐스팅 했을 때, 자식 클래스의 메서드 호출할 수 없다. (오버라이딩이 아님)
+- 1. Object obj = new Dog();
+- 2. if (obj instanceof Dog dog1) { dog1.sound(); }
+- obj instanceof Dog가 true일 때 Dog dog1 = (Dog) obj;를 실행한다. (패턴 매칭 기능)
+- 3. if (!(obj instanceof Dog dog2)) { return; } dog2.sound();
+- 블록에 return/throw/continue/break가 있으면 확정적이어서 컴파일러가 블록 밖에서 접근을 허용한다.
+- 4. while (obj instanceof Dog dog3 && dog3.isHungry()) { dog3.eat(); }
+- 5. switch (obj) { case Dog dog4 -> dog4.sound(); }
+- 컴파일러는 구문 분석, 의미 분석, 지역 변수 슬롯 계산 (모든 경로 분석), 바이트코드 생성한다.
+- JVM이 .class 파일 읽고 타입 안정성/스택 오버플로우 체크하고 메서드 영역에 클래스 정보 로딩한다.
+- new Dog();하면 힙 메모리에 Dog 객체 생성된다: 메서드 포인터, 필드
+- 메서드 호출 시 JVM 스택에 스택 프레임이 생긴다: 지역 변수 테이블(슬롯), 오퍼랜드 스택, 프레임 데이터
+- 바이트코드가 실행된다. instanceof가 true이면 dog1 슬롯에 (Dog) obj 값이 할당된다.
+- if문 블록을 빠져나가면 여전히 스택 프레임 슬롯에 참조값이 할당되어 있지만, 컴파일러가 접근 제한한다.
+- 슬롯이 가능한 지역 변수 개수만큼 생성되는 건 아니고 최적화로 공유되기도 한다. (다른 타입이어도 덮어씀)
+- 패턴 매칭이 있지만, Object를 다형성으로 활용하기에는 메서드 오버라이딩에 한계가 있다.
+- Object가 유용한 경우가 있다: 프레임워크/라이브러리 내부에서..
+- Object 배열을 사용하거나, Object 매개변수/반환 타입, Object를 담는 자료구조, 내부 구현에서 사용 등
+- generate 단축키: alt + insert (toString() 오버라이딩)
+- toString(), hashCode()에서 사용하는 참조값 얻기: System.identityHashCode(obj) 실행
+- 정적 의존은 컴파일 타임에 결정되는 의존 관계로, 코드에 타입이 명시되어 있다.
+- 동적 의존은 런타임에 결정되는 의존 관계로, 전달될 객체가 실행 시점에 결정된다.
+- class A가 메서드에서 (Car car)를 사용하는 경우 A는 Car에 의존한다고 표현한다.
+- 구체적인 것에 의존하는 경우다. Car를 Bus로 바꾸려면 코드를 변경한다.
+- -> A는 Car에 정적 의존하고, Car의 하위 클래스에 동적 의존할 가능성 있다.
+- class B가 메서드에서 (Animal animal)를 사용하는 경우 B는 Animal에 의존한다고 표현한다.
+- 추상적인 것(추상 클래스, 인터페이스)에 의존하는 경우다. Dog든 Cat이든 쓸 수 있다.
+- -> B는 Animal에 정적 의존하고, Dog나 Cat에 동적 의존할 가능성 있다.
+- class C가 메서드에서 (Object o)를 사용하는 경우 C는 Object에 의존한다고 표현한다.
+- 너무 추상적이라서 활용도는 낮다. Object 메서드를 오버라이딩한다면 활용도 높다.
+- -> C는 Object 클래스에 정적 의존하고, 모든 클래스에 동적 의존할 가능성 있다.
+- Object 대 인터페이스: 다형적 참조 - 오브젝트는 모든 타입을 > 인터페이스는 구현 클래스를 받는다.
+- Object 대 인터페이스: 오버라이딩 - 오브젝트는 오브젝트 메서드만 < 인터페이스는 정의된 모든 메서드
+- Object 대 인터페이스: 타입 체크 - 오브젝트는 instanceof 필요 < 인터페이스는 불필요
+- Object 대 인터페이스: 컴파일 안정성 - 오브젝트는 런타임 오류 가능 < 인터페이스는 컴파일 타임 체크
+- 1. class PowerOutlet { public void plug(Object d) { Phone p = (Phone) d; p.charge(); } }
+- 2. outlet.plug(new Phone()); //ok
+- 3. outlet.plug(new Laptop()); //런타임 ClassCastException
+- 1. interface Chargeable { void charge(); }
+- 2. class Phone implements Chargeable { public void charge() { } }
+- 3. class Laptop implements Chargeable { public void charge() { } }
+- 4. class PowerOutlet { public void plug(Chargeable device) { device.charge(); } }
+- 5. outlet.plug(new Phone()); //ok
+- 6. outlet.plug(new Laptop()); //ok
+- 7. outlet.plug(new Book()); //컴파일 오류
+- 자바 객체가 같다 - 동일성 (Identity), 동등성 (Equality)
+- 동일성이란, 물리적 동등성: 두 참조 변수가 메모리상 같은 객체를 가리키는지 == 연산자로 비교한다.
+- 1. String a = new String("hello");
+- 2. String b = new String("hello");
+- 3. String c = a;
+- 4. System.out.println(a == b); //false (서로 다른 객체)
+- 5. System.out.println(a == c); //true (같은 객체를 참조)
+- 동등성이란, 논리적 동등성: 두 객체의 내용이나 값이 같은지 object.equals() 메서드로 비교한다.
+- 1. String a = new String("hello");
+- 2. String b = new String("hello");
+- 3. System.out.println(a.object.equals(b)); //true
+- 커스텀 클래스를 만들 때는 object.equals()를 오버라이딩해서 논리적 동등성을 정의한다.
+- 1. Person p1 = new Person("김철수", 25); Person p2 = new Person("김철수", 25);
+- 2. System.out.println(p1.object.equals(p2)); //false
+- Object 기본 구현에서, object.equals()는 this == obj를 반환하기 때문이다.
+- String, Integer, ArrayList 등 표준 클래스에서 동등성 목적으로 오버라이딩 해둔 거였다.
+- 1. @Override public boolean object.equals(Object o) {
+- 2. if (this == o) return true;
+- 3. if (o == null || this.getClass() != o.getClass()) return false;
+- 4. Person p = (Person) o; //필드 접근 위해 명시적 다운캐스팅
+- 5. return this.age == p.age && this.name.object.equals(p.name); }
+- 이렇게 하면 p1.object.equals(p2)가 true다.
+- object.equals() 생성 단축키: generator (alt + insert)
+- 1. @Override public int hashCode() {
+- 2. return Objects.hash(name, age); //같은 값이면 같은 해시코드 }
+- object.equals()와 hashCode()는 컬렉션에서 함께 사용된다. hashCode()도 오버라이딩 필요해진다.
+- Objects.equals()는 import java.util.Objects; 해야 쓸 수 있다. Objects는 유틸리티 클래스이다.
+- Object에 clone(), 멀티쓰레드용 메서드 등이 더 있다.
+---
