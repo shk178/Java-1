@@ -350,3 +350,500 @@ public static String join(CharSequence delimiter, CharSequence... elements)
 ```
 - StringBuilder 결과를 String에 저장하려면 .toString();으로 변환한다.
 ---
+# 5. 래퍼 (Wrapper) 클래스
+- 기본형은 객체가 아니다.
+- 메서드x, 객체 참조가 필요한 컬렉션x, 제네릭x
+- 기본형은 null 값을 못 갖는다. (때로는 데이터 없음 상태를 나타낼 필요성)
+- 데이터 없음을 -1로 표현하려고 했는데 데이터 있음에 -1이 값이어서 구분이 안되는 등..
+- 자바의 래퍼 클래스: 불변이다, equals()로 비교해야 한다.
+- Byte, Short, Integer, Long
+- Float, Double
+- Character, Boolean
+- Integer.valueOf(): 명시적 박싱
+- 오토 박싱/언박싱: 컴파일 단계에서 추가
+```java
+public class WrapperMain {
+    public static void main(String[] args) {
+        Integer i1 = new Integer(10);
+        //항상 새로운 객체 생성
+        Integer i2 = Integer.valueOf(10);
+        //-128 ~ 127 범위의 값은 캐싱되어 재사용
+        //같은 값에 대해 같은 객체를 반환
+        Integer i3 = 10;
+        //auto-boxing (내부적으로 valueOf() 호출)
+        System.out.println("i1 == i2 = " + (i1 == i2)); //false
+        System.out.println("i1 == i3 = " + (i1 == i3)); //false
+        System.out.println("i2 == i3 = " + (i2 == i3)); //true
+        System.out.println("i3 = " + i3); //10
+        //참조값 대신 내부 값을 출력하도록 toString()을 재정의
+        int i4 = i3.intValue();
+        System.out.println("i4 = " + i4); //10
+        //명시적 언박싱: 객체 내부의 기본형 값을 반환
+        int i5 = i3;
+        System.out.println("i5 = " + i5); //10
+        //자동 언박싱: 내부적으로 intValue() 호출
+    }
+}
+```
+- Integer.parseInt("10"); //문자열 -> (Integer 아닌) int 값 반환
+- 기본형이 래퍼 클래스보다 연산도 빠르고, 메모리도 덜 쓴다.
+- 성능 최적화는 복잡함 요구하고, 전체 app 성능 관점에서 불필요할 수 있다.
+- 웹 app에서 자바 메모리 내 연산보다, 네트워크 호출이 훨씬 오래 걸린다.
+- 연산을 수천 번 -> 한 번으로 줄이기보다, 네트워크 호출 한 번을 줄인다.
+- 연속해서 수많은 연산을 수행하면 기본형 사용하는 최적화 한다.
+- 나머지 경우에는 유지보수 관점에서 나은 것을 쓴다.
+- 권장: 개발 -> 성능 테스트 -> 문제 부분을 찾아서 최적화
+# 5_2. Class 클래스
+- 클래스의 메타데이터(정보)를 다루는 클래스
+- 실행 중인 자바 애플리케이션 내의 클래스와 인터페이스 정보에 접근 가능
+- 주요 기능
+```
+1. 타입 정보 조회
+- 클래스명, 패키지, 슈퍼클래스, 구현 인터페이스
+- 접근 제한자(public, private 등)
+2. 동적 클래스 로딩 및 객체 생성
+//런타임에 클래스를 동적으로 로딩: 실행 중에 문자열로 찾음
+Class<?> clazz = Class.forName("com.example.MyClass"); //MyClass의 정보만 있고, 실제 객체는 없음
+//클래스 정보를 바탕으로 new를 대신함: 실제 객체를 생성
+Object obj = clazz.getDeclaredConstructor().newInstance(); //MyClass 객체가 만들어짐
+//매개변수 타입 지정해서 생성자 찾기
+Constructor<?> constructor = clazz.getDeclaredConstructor(String.class, int.class);
+//매개변수 값을 넣어서 생성자 실행
+Object obj = constructor.newInstance("홍길동", 20);
+3. 리플렉션(Reflection)
+//어떤 메서드들이 있나?
+Method[] methods = clazz.getMethods();
+//어떤 필드(변수)들이 있나?
+Field[] fields = clazz.getFields();
+//어떤 생성자들이 있나?
+Constructor[] constructors = clazz.getConstructors();
+//private 필드도 접근 가능!
+Field privateField = clazz.getDeclaredField("password");
+privateField.setAccessible(true); //잠금 해제
+//obj.password는 컴파일 에러! (여전히 private)
+Object value = privateField.get(obj); //값 읽기 (리플렉션으로만 접근)
+//메서드 이름을 문자열로 받아서 실행
+String methodName = "someMethod";
+Method method = clazz.getMethod(methodName);
+method.invoke(obj);
+4. 애노테이션 처리
+- 클래스, 메서드, 필드에 적용된 애노테이션 조회
+- 애노테이션 정보 기반 처리
+5. Class 객체 얻는 방법
+(1) 클래스명.class (.class 리터럴)
+Class<?> clazz = String.class;
+- 클래스 로딩 안 함
+- 이미 로딩된 Class 객체의 참조만 가져옴
+- 가장 빠름
+- String은 JVM이 시작할 때 자동으로 로딩된다.
+- 코드에 클래스 이름이 등장하면 JVM이 그 클래스를 미리 로딩
+(2) 객체.getClass()
+String str = "hello";
+Class<?> clazz = str.getClass();
+- 클래스 로딩 안 함
+- 객체가 이미 있다 = 클래스가 이미 로딩되어 있다
+- 객체의 Class 정보 반환
+(3) Class.forName("패키지.클래스명")
+Class<?> clazz = Class.forName("java.lang.String");
+- 클래스 로딩 함! 아직 로딩 안 된 클래스를 메모리에 로딩
+- 정확히 그 줄이 실행될 때 로딩: 문자열이라서 컴파일러가 미리 못 봄
+- 정적 초기화 블록도 실행됨
+```
+- 컴파일러가 MyClass.class를 발견한 순간 JVM이 클래스를 미리 로딩해둠
+```java
+class MyClass {
+    static {
+        System.out.println("MyClass 로딩됨!");
+    }
+}
+public class Test {
+    public static void main(String[] args) {
+        System.out.println("프로그램 시작");
+        System.out.println("1. Class 객체 참조");
+        Class<?> clazz = MyClass.class;
+        System.out.println("2. 프로그램 끝");
+    }
+}
+//MyClass 로딩됨!
+//프로그램 시작
+//1. Class 객체 참조
+//2. 프로그램 끝
+```
+- 정적 초기화 블록 (static block)
+```java
+class MyClass {
+    static {
+        System.out.println("정적 초기화 블록 실행!");
+    }
+}
+//클래스가 로딩될 때 딱 1번만 실행
+//객체 생성과 무관
+class Config {
+    static Map<String, String> settings;
+    static {
+        settings = new HashMap<>();
+        settings.put("url", "https://api.example.com");
+        settings.put("timeout", "3000");
+        System.out.println("설정 초기화 완료");
+    }
+}
+//클래스 변수 초기화 목적
+class Driver {
+    static {
+        //드라이버를 DriverManager에 자동 등록
+        DriverManager.registerDriver(new Driver());
+    }
+}
+Class.forName("com.mysql.jdbc.Driver");
+//JDBC 드라이버 등록 목적
+```
+- throws ClassNotFoundException: Class.forName()에 필요
+- import java.lang.reflect.*; Field, Method, Constructor 등에 필요
+- throws NoSuchMethodException: getDeclaredConstructor()에 필요
+- newInstance(): throws가 많이 필요
+- throws Exception을 추가하지 않으면 컴파일 오류 난다.
+- Superclass, Interface는 Class니까 Class<?>에 get 결과를 저장한다.
+- Class는 제네릭 클래스이다. 타입 파라미터 <T>를 쓰는 것이 권장된다.
+- 타입 파라미터랑 타입이 안 맞으면 컴파일 에러난다.
+- 타입 파라미터가 <?> (와일드카드)면, 객체 생성 시 Object로 받고 캐스팅해 쓴다.
+```java
+//타입을 알 때는 구체적으로
+Class<String> stringClass = String.class;
+String str = stringClass.getDeclaredConstructor().newInstance();
+//캐스팅 불필요!
+//타입을 모를 때는 ?
+Class<?> unknownClass = Class.forName(className);
+Object obj = unknownClass.getDeclaredConstructor().newInstance();
+//Object로만 받을 수 있음, 캐스팅 후 쓸 수 있음
+Class<?> unknownClass = Class.forName("java.lang.String");
+String s = (String) unknownClass.getDeclaredConstructor().newInstance();
+//컴파일 오류 안 나고 String이기 때문에 런타임 오류도 안 난다.
+//"java.lang.String"이 아니면 런타임 오류 (ClassCastException) 난다.
+```
+- 안전하게 사용하는 방법 1: instanceof 체크
+```java
+Class<?> unknownClass = Class.forName(className);
+Object obj = unknownClass.getDeclaredConstructor().newInstance();
+//타입 확인 후 캐스팅
+if (obj instanceof String) {
+    String s = (String) obj;
+    System.out.println("문자열: " + s);
+} else {
+    System.out.println("String이 아닙니다: " + obj.getClass().getName());
+}
+```
+- 안전하게 사용하는 방법 2: try-catch
+```java
+Class<?> unknownClass = Class.forName(className);
+Object obj = unknownClass.getDeclaredConstructor().newInstance();
+try {
+    String s = (String) obj;
+    System.out.println("문자열: " + s);
+} catch (ClassCastException e) {
+    System.out.println("String으로 변환 실패: " + e.getMessage());
+}
+```
+- 안전하게 사용하는 방법 3: 타입 제한
+```java
+//String 클래스만 허용
+Class<? extends String> stringClass = 
+    Class.forName("java.lang.String").asSubclass(String.class);
+String s = stringClass.getDeclaredConstructor().newInstance();
+//안전! (컴파일러가 체크)
+```
+# 5_3. System 클래스
+```java
+package system;
+import java.util.Arrays;
+public class Main {
+    public static void main(String[] args) {
+        //현재 시간(밀리초)를 가져온다.
+        long currentTimeMillis = System.currentTimeMillis();
+        System.out.println("currentTimeMillis = " + currentTimeMillis); //currentTimeMillis = 1759311877255
+        //현재 시간(나노초)를 가져온다.
+        long currentNanoTime = System.nanoTime();
+        System.out.println("currentNanoTime = " + currentNanoTime); //currentNanoTime = 294160339001800
+        //OS: 환경 변수를 읽는다.
+        System.out.println("System.getenv() = " + System.getenv());
+        //System.getenv() = {USERDOMAIN_ROAMINGPROFILE=DESKTOP-N7N841G, LOCALAPPDATA=C:\Users\user\AppData\Local, ...
+        //Java: 시스템 속성을 읽는다.
+        System.out.println("System.getProperties() = " + System.getProperties());
+        //System.getProperties() = {java.specification.version=21, sun.cpu.isalist=amd64, sun.jnu.encoding=MS949, ...
+        System.out.println("java.version = " + System.getProperty("java.version")); //java.version = 21.0.8
+        //OS: 배열을 고속으로 복사한다.
+        char[] srcArr = {'a', 'b', 'c'};
+        char[] destArr = new char[srcArr.length];
+        System.arraycopy(srcArr, 0, destArr, 0, srcArr.length);
+        System.out.println(Arrays.toString(destArr)); //[a, b, c]
+    }
+}
+```
+- System.in, System.out, System.err: 표준 입력, 출력, 오류 스트림
+- System.exit(int status); - 프로그램 종료 및 OS에 상태 코드 전달
+- 0은 정상 종료, 0 이외에는 오류나 예외적인 종료
+# 5_4. Math, Random 클래스
+- 1. Math 클래스
+- 절댓값(abs), 최댓값(max), 최솟값(min)
+- 지수, 로그
+- 반올림, 정밀도
+- 삼각함수
+- Math.random(): 0.0 ~ 1.0 사이 랜덤한 double
+- Math.random()도 내부에서는 Random 클래스 쓴다.
+- 정밀한 계산이 필요하면 BigDecimal을 쓴다.
+- 2. Random 클래스
+- 단축키 shift + f6: Class 이름 + .java 파일명 변경
+```java
+package random;
+import java.util.Random;
+public class Main {
+    public static void main(String[] args) {
+        Random random = new Random();
+        System.out.println(random.nextInt()); //1078820306, -814770099 등
+        System.out.println(random.nextDouble()); //0.0d ~ 1.0d
+        System.out.println(random.nextBoolean()); //true or false
+        System.out.println(random.nextInt(10)); //0 ~ 9
+        System.out.println(random.nextInt(10) + 1); //1 ~ 10
+        Random r1 = new Random(10); //long seed = 10
+        Random r2 = new Random(10); //long seed = 10
+        System.out.println("r1.nextDouble() = " + r1.nextDouble());
+        //r1.nextDouble() = 0.7304302967434272 (같은 Java 버전 내에서 항상)
+        System.out.println("r2.nextDouble() = " + r2.nextDouble());
+        //r2.nextDouble() = 0.7304302967434272 (같은 Java 버전 내에서 항상)
+    }
+}
+```
+# 6. 열거형 - ENUM
+- String 사용 시 타입 안전성 부족한 문제 있다.
+- 잘못된 문자열 입력해도, 컴파일 때 감지되지 않는다.
+- static final String 상수를 사용하면 좀 낫다.
+- 상수도 String으로 받아서, 상수 대신 문자열 입력할 가능성 있다.
+- 보완해봤다. (타입 안전Type-safe 열거형Enum 패턴Pattern이라고 한다.)
+```java
+public class ClassGrade {
+    static {
+        System.out.println("1. 클래스 로딩 시작");
+    }
+    public static final ClassGrade BASIC = new ClassGrade("BASIC");
+    public static final ClassGrade GOLD = new ClassGrade("GOLD");
+    public static final ClassGrade DIA = new ClassGrade("DIA");
+    static {
+        System.out.println("5. 클래스 로딩 완료");
+    }
+    private String name;
+    public ClassGrade(String name) {
+        this.name = name;
+        System.out.println("→ " + name + " 객체 생성");
+    }
+}
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("메인 시작");
+        ClassGrade grade1 = ClassGrade.BASIC;
+        System.out.println("BASIC");
+        ClassGrade grade2 = ClassGrade.GOLD;
+        System.out.println("GOLD");
+        ClassGrade grade3 = ClassGrade.DIA;
+        System.out.println("DIA");
+        ClassGrade grade4 = ClassGrade.BASIC;
+        ClassGrade grade5 = ClassGrade.GOLD;
+        ClassGrade grade6 = ClassGrade.DIA;
+        //메인 시작
+        //1. 클래스 로딩 시작
+        //→ BASIC 객체 생성
+        //→ GOLD 객체 생성
+        //→ DIA 객체 생성
+        //5. 클래스 로딩 완료
+        //BASIC
+        //GOLD
+        //DIA
+        System.out.println(grade1 == grade2); //false
+        System.out.println(grade1 == grade3); //false
+        System.out.println(grade2 == grade3); //false
+        System.out.println(grade1 == grade4); //true
+        System.out.println(grade2 == grade5); //true
+        System.out.println(grade3 == grade6); //true
+    }
+}
+```
+- 1. ClassGrade custom = new ClassGrade(); //새로운 등급 만들 수 있는 문제 있다.
+- 생성자를 private으로 하면 해결된다.
+- 2. switch는 지원 타입이 제한적이라 switch문으로 작성할 수 없다. (컴파일러가 값 비교 정하기 어려움)
+- 최신 Java에서는 패턴 매칭으로 객체도 가능하나, 커스텀 클래스의 상수는 안 된다.
+- 3. enum은 제한된 개수의 상수만 존재하고, 내부적으로 정수로 변환되어 처리된다.
+```java
+public enum ClassGrade {
+    BASIC,  //내부적으로 0
+    GOLD,   //내부적으로 1
+    DIA     //내부적으로 2
+}
+//switch는 사실 이렇게 변환됨
+switch (grade.ordinal()) { //ordinal() = 순서 번호
+    case 0:  //BASIC
+        break;
+    case 1:  //GOLD
+        break;
+    case 2:  //DIA
+        break;
+}
+```
+- 4. static import를 열거형에 사용하면 좋다.
+```java
+import java.util.ArrayList;
+//일반 import: 클래스명만 생략 가능
+ArrayList list = new ArrayList();
+import static java.lang.Math.PI;
+import static java.lang.Math.sqrt;
+//static import: 클래스명까지 생략 가능
+double result = PI * sqrt(16);
+//Math.PI, Math.sqrt() 대신 바로 사용
+```
+```java
+import static enumeration.ClassGrade.*;
+//enum의 모든 상수를 import
+public class Main {
+    public static void main(String[] args) {
+        //ClassGrade. 생략 가능
+        ClassGrade grade1 = BASIC;
+        ClassGrade grade2 = GOLD;
+        ClassGrade grade3 = DIA;
+        if (grade1 == BASIC) {
+            System.out.println("기본 등급");
+        }
+    }
+}
+```
+- 5. 여러 enum의 상수 이름이 겹칠 때, 상수 출처가 불명확해지는 때는 주의한다.
+- ordinal()은 항목 변경되거나 하는 경우 바뀌니까 가급적 안 쓴다.
+- 6. enum(열거형)도 Class이다.
+- java.lang.Enum 클래스를 자동으로 상속받아서, 다른 클래스를 상속받을 수 없다.
+```java
+import java.util.Arrays;
+public class Main {
+    public static void main(String[] args) {
+        Grade[] values = Grade.values();
+        System.out.println(Arrays.toString(values)); //[BASIC, GOLD, DIA]
+        Grade d = Grade.valueOf("DIA");
+        System.out.println(d); //DIA
+        //Grade e = Grade.valueOf("EIA"); //IllegalArgumentException
+    }
+}
+```
+- 7. 열거형은 인터페이스를 구현할 수 있다.
+```java
+//인터페이스 정의
+public interface Discountable {
+    int discount(int price);
+}
+//enum이 인터페이스 구현
+public enum ClassGrade implements Discountable {
+    BASIC, GOLD, DIA;
+    @Override
+    public int discount(int price) { //새 상수 추가 시 switch 수정 필요하다.
+        return switch (this) {
+            case BASIC -> (int) (price * 0.9);  //10% 할인
+            case GOLD -> (int) (price * 0.8);   //20% 할인
+            case DIA -> (int) (price * 0.7);    //30% 할인
+        };
+    }
+}
+//사용
+ClassGrade grade = ClassGrade.GOLD;
+int finalPrice = grade.discount(10000);  //8000원
+```
+- 8. 열거형에 추상 메서드를 선언하고, 구현할 수 있다. (익명 클래스와 같은 방식)
+```java
+//열거형에 추상 메서드 선언 + 각 상수마다 다르게 구현
+public enum ClassGrade {
+    //각 상수가 추상 메서드를 구현 (익명 클래스처럼)
+    BASIC {
+        @Override
+        public int discount(int price) {
+            return (int) (price * 0.9);  //10% 할인
+        }
+    },
+    GOLD {
+        @Override
+        public int discount(int price) {
+            return (int) (price * 0.8);  //20% 할인
+        }
+    },
+    DIA {
+        @Override
+        public int discount(int price) {
+            return (int) (price * 0.7);  //30% 할인
+        }
+    };
+    //추상 메서드 선언
+    public abstract int discount(int price);
+}
+//사용
+ClassGrade grade = ClassGrade.GOLD;
+int finalPrice = grade.discount(10000);  //8000원
+```
+- 새 상수 추가 시 구현 강제됨
+- 컴파일 에러로 누락 방지
+- 각 상수의 로직이 명확히 분리됨
+```java
+//익명 클래스와 같은 방식
+public enum ClassGrade {
+    BASIC {  //← 익명 클래스 시작
+        @Override
+        public int discount(int price) {
+            return (int) (price * 0.9);
+        }
+    },  //← 익명 클래스 끝
+    GOLD {  //← 또 다른 익명 클래스
+        @Override
+        public int discount(int price) {
+            return (int) (price * 0.8);
+        }
+    };
+    public abstract int discount(int price);
+}
+//실제로는 이렇게 동작함
+//class BASIC extends ClassGrade {...}
+//class GOLD extends ClassGrade {...}
+//class DIA extends ClassGrade {...}
+```
+- 9. 리팩토링: enum에 데이터(필드)를 추가
+```java
+public enum Grade2 {
+    BASIC(10),  //new Grade2(10)과 비슷
+    GOLD(20),   //new Grade2(20)과 비슷
+    DIA(30);    //new Grade2(30)과 비슷
+    private final int discountPercent;
+    Grade2(int percent) {
+        this.discountPercent = percent;
+        System.out.println("생성자 호출: " + percent);
+    } //private Grade(int percent) {...}
+}
+//클래스 로딩 시 한 번만 실행됨
+//"생성자 호출: 10"
+//"생성자 호출: 20"
+//"생성자 호출: 30"
+```
+- private `static` final int를 쓰면 안 된다.
+- static 필드는 클래스의 모든 인스턴스가 공유한다.
+- 10. 리팩토링: enum에 기능(메서드)을 추가
+```java
+    public int discountWon(int price) {
+        return price * this.discountPercent / 100;
+    } //<- Grade2에 추가됨
+public class Main {
+    public static void main(String[] args) {
+        int price = 10000;
+        Grade2[] grade2s = Grade2.values();
+        for (Grade2 grade2 : grade2s) {
+            print(grade2, price);
+        }
+    }
+    private static void print(Grade2 grade2, int price) {
+        System.out.println(grade2 + " " + grade2.discountWon(price));
+    }
+}
+//BASIC 1000
+//GOLD 2000
+//DIA 3000
+```
+- 클래스 이름.메서드 이름으로 호출하려면 static 메서드여야 한다.
+---
