@@ -2,14 +2,37 @@
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
     public static void main(String[] args) {
-        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
-        System.out.printf("Hello and welcome!");
-
-        for (int i = 1; i <= 5; i++) {
-            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-            System.out.println("i = " + i);
+        int[] arr = new int[3];
+        //index 입력: O(1)
+        arr[0] = 1;
+        arr[1] = 2;
+        arr[2] = 3;
+        //index 변경: O(1)
+        arr[2] = 10;
+        //index 조회: O(1)
+        System.out.println(arr[2]); //10
+        //arr 검색: O(n)
+        int value = 10;
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i] == value) break;
         }
+        add(arr, 1, 0);
+    }
+    private static void add(int[] arr, int i, int value) {
+        for (int e : arr) {
+            System.out.print(e + ", ");
+        } // 1, 2, 10,
+        System.out.println();
+        //arr[arr.length] = arr[arr.length - 1];
+        //Exception in thread "main" java.lang.ArrayIndexOutOfBoundsException: Index 3 out of bounds for length 3
+        //	at Main.add(Main.java:26)
+        //	at Main.main(Main.java:19)
+        for (int j = arr.length - 1; j > i; j--) {
+            arr[j] = arr[j - 1];
+        }
+        arr[i] = value;
+        for (int e : arr) {
+            System.out.print(e + ", ");
+        } //1, 0, 2,
     }
 }
