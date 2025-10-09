@@ -1,3 +1,5 @@
+import java.util.LinkedList;
+
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
@@ -17,6 +19,7 @@ public class Main {
             if (arr[i] == value) break;
         }
         add(arr, 1, 0);
+        LinkedList<String> list = new LinkedList<>();
     }
     private static void add(int[] arr, int i, int value) {
         for (int e : arr) {
