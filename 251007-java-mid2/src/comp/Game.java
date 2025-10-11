@@ -39,8 +39,8 @@ public class Game {
             result1 = "draw";
             result2 = "draw";
         } else {
-            result1 = "win";
-            result2 = "lose";
+            result1 = "lose";
+            result2 = "win";
         }
         player1.setSheet("R"+round+": "+result1+"("+score1+")");
         player2.setSheet("R"+round+": "+result2+"("+score2+")");
