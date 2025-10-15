@@ -10,7 +10,7 @@ Java에서 여러 스레드가 있을 때
 어떤 스레드는 일을 하다가 잠깐 멈춰야 하고
 다른 스레드는 그걸 깨워줘야 할 때가 있다.
 하나의 스레드가 신호가 올 때까지 기다리기(park) 역할을,
-다른 스레드가 신호를 보냄(unpark) 역할을 합니다.
+다른 스레드가 신호를 보냄(unpark) 역할을 한다.
 한 스레드가 park()으로 멈추고
 다른 스레드가 unpark()으로 깨운다.
 ```
@@ -185,12 +185,15 @@ Condition newCondition()
 ```
 - 구현체 ReentrantLock
 ```java
+//ReentrantLock → AbstractQueuedSynchronizer → AbstractOwnableSynchronizer
 public class ReentrantLock implements Lock {
     private final Sync sync; //AbstractQueuedSynchronizer(AQS) 기반
     abstract static class Sync extends AbstractQueuedSynchronizer {
         //state 변수로 락 상태 관리
         //state = 0 : 락이 해제된 상태
         //state > 0 : 락이 획득된 상태 (재진입 횟수)
+        //exclusiveOwnerThread 변수로 락을 획득한 스레드 객체 관리
+        //exclusiveOwnerThread = null: 락이 해제된 상태
     }
 }
 abstract class AbstractQueuedSynchronizer {
@@ -204,6 +207,15 @@ abstract class AbstractQueuedSynchronizer {
     }
     private transient volatile Node head;
     private transient volatile Node tail;
+}
+public abstract class AbstractOwnableSynchronizer implements java.io.Serializable {
+    private transient Thread exclusiveOwnerThread; //락을 획득한 스레드 객체
+    protected final void setExclusiveOwnerThread(Thread thread) {
+        exclusiveOwnerThread = thread;
+    }
+    protected final Thread getExclusiveOwnerThread() {
+        return exclusiveOwnerThread;
+    }
 }
 ```
 ```
@@ -266,13 +278,13 @@ try {
 }
 //Thread B (A가 락 보유 중일 때 호출)
 lock.lock(); //state=1 확인 → 큐 진입 → park() → WAITING
-//A가 unlock() 하면 → unpark() → RUNNABLE → CAS 시도
+//A가 unlock()하면 → unpark() → RUNNABLE → CAS 시도
 ```
 ```
 - Lock의 락은 AQS의 state 변수와 대기 큐로 구현
 - 대기는 LockSupport.park()로 WAITING 상태
 - 깨우기는 LockSupport.unpark()로 RUNNABLE 복귀
-- 초기 상태는 state=0, 큐 비어있음
+- 초기 상태는 state=0, 큐 비어 있음
 - unlock 후 호출 스레드는 자신의 코드 계속 실행
 - unlock 후 깨워진 스레드는 큐에서 나와서 락 획득 경쟁
 재진입 가능 (Reentrant) - 동일한 스레드가 여러 번 락을 획득할 수 있음
@@ -299,3 +311,111 @@ AQS 큐 → 라이브러리 레벨에서 관리
 | 인터럽트 대응 | 불가 | 가능 (lockInterruptibly()) |
 | 조건 변수 | wait()/notify() | Condition 객체 |
 | 성능 | 단순, 안정적 | 고성능, 유연성 높음 |
+
+## ReentrantLock
+- 비공정 모드: 기본 모드, 공정성x
+- `new ReentrantLock();`
+- 공정 모드: 먼저 대기한 스레드가 먼저 획득, 성능 낮음
+- `new ReentrantLock(true);`
+- 251011-java-adv1/src/sync2/RLMain.java
+- 비공정 락
+- 락을 방금 놓은 스레드나, 대기열에 새로 들어온 스레드가 즉시 락을 다시 잡을 수 있음
+- 앞쪽에서 섞임이 있다=대기열 무시(선점)이 일어났다.
+- 공정 락
+- 스레드가 대기열에 들어오면, 순서대로 실행됨
+- 뒤에서 섞임이 있다=2그룹 스레드가 먼저 대기열에 들어갔다.
+- `Thread.sleep(2);` //락을 유지
+- 락은 스레드의 소유권 개념이다.
+- ReentranLock 또는 synchronized의 락은 스레드가 소유하고 있는 동안 유지된다.
+- 한 스레드가 lock()을 호출하면, 내부적으로 그 스레드가 락의 주인으로 등록된다.
+- 락을 소유한 스레드가 unlock()을 호출하기 전까지 락은 해제되지 않는다.
+- sleep()을 하면 owner는 TIMED_WAITING 상태지만 락은 유지된다.
+- 251011-java-adv1/src/sync2/BankAccount.java
+- `sleep(50); //약간 쉬었다가 재시도 (락 경합 유도)`
+- 대기열에 추가하도록 한다는 의미다.
+- Lock을 final로 선언하는 이유
+- 한 번 생성된 Lock 객체가 변경되지 않게 보장하기 위해서
+- Lock은 객체 단위 동기화를 위해 사용됨
+- ReentrantLock은 특정 객체의 상태(balance)를 보호하기 위해 존재
+- BankAccount 객체마다 하나의 Lock 인스턴스가 있고
+- 그 Lock을 통해서 balance에 대한 접근을 직렬화한다.
+```java
+lock.lock(); //lock이 달라지면 동기화가 안 된다.
+try {
+    balance += amount;
+} finally {
+    lock.unlock();
+}
+```
+- Lock 객체는 상태를 갖는 동기화 메커니즘
+- ReentrantLock은 내부적으로 누가 락을 들고 있는지, 재진입 횟수 등을 저장한다.
+- 즉, 상태를 가진 객체다.
+- 그래서 final로 만들어 다른 인스턴스로 바뀌지 않도록 해야 한다.
+- 그렇게 해야 Lock의 상태(누가 잡고 있는지 등)가 일관되게 유지된다.
+- BankAccount는 멀티스레드 환경에서 공유될 가능성이 높다.
+- final을 붙이면 컴파일러와 다른 개발자에게
+- 이 락은 객체의 생명주기 동안 바뀌지 않는다는 의도를 전달할 수 있다.
+```java
+public boolean deposit(int amount) {
+    if(!lock.tryLock()) {
+        log("입금 불가");
+        return false;
+    }
+    //락을 가진 상태 (다른 스레드는 balance에 접근할 수 없다.)
+    try {
+        balance += amount;
+        log("입금 완료");
+    } finally {
+        //finally에서 unlock()을 호출해야 한다.
+        lock.unlock();
+        //unlock()에 앞서 예외가 발생해서
+        //락이 해제되지 못해서 발생하는
+        //교착(deadlock) 상황을 방지하기 위해서다.
+    }
+    //unlock() 다음 코드는 락의 보호를 받지 않는다.
+    //임계 구역 (Critical Section), 비임계 구역 (Non-critical Section)이라고 한다.
+    log("거래 종료");
+    return true;
+}
+```
+- try-finally가 안전한 락 해제 보장 패턴이다.
+```java
+if (lock.tryLock()) {
+    try {
+        //공유 자원 접근
+    } finally {
+        lock.unlock();
+    }
+}
+```
+- catch는 예외를 처리하고 복구할 때 추가한다.
+```java
+if (!lock.tryLock()) {
+    log("입금 불가");
+    return false;
+}
+try {
+    balance += amount;
+    log("입금 완료");
+    return true;
+} catch (Exception e) {
+    log("입금 중 오류: " + e.getMessage());
+    return false; //예외를 처리하고 복구
+} finally {
+    lock.unlock(); //락 해제
+}
+```
+## 교착 상태
+- 두 개 이상의 프로세스나 스레드가 서로가 점유한 자원을 기다리며 무한히 대기하는 상황
+- 이 상태에서는 어떤 작업도 더 이상 진행되지 않으며, 시스템 일부 또는 전체가 멈춘 것처럼 보인다.
+- 교착 상태가 발생하는 4가지 조건 (Coffman 조건)
+- 상호 배제(Mutual Exclusion): 자원은 한 번에 하나의 프로세스만 사용할 수 있음
+- 점유 및 대기(Hold and Wait): 자원을 점유한 상태에서 다른 자원을 요청하며 대기
+- 비선점(No Preemption): 자원을 강제로 빼앗을 수 없음
+- 순환 대기(Circular Wait): 프로세스들이 서로 자원을 요청하며 원형으로 대기
+- 이 네 가지 조건이 모두 만족될 때 교착 상태가 발생할 수 있다.
+- 동기화에서 교착 상태가 발생하는 경우
+- 두 스레드가 서로 다른 락을 점유한 상태에서 상대방의 락을 요청할 때
+- 예: 스레드 A는 락 X를 잡고 락 Y를 기다리고, 스레드 B는 락 Y를 잡고 락 X를 기다리는 경우
+- 락을 잡은 후 예외가 발생하거나 unlock()을 호출하지 않아 락이 해제되지 않을 때 다른 스레드는 해당 락을 얻지 못하고 무한 대기
+- 자원 요청 순서가 불규칙하거나 동적으로 바뀔 때 순환 대기 조건이 쉽게 성립되어 교착 상태 발생 가능성 증가
