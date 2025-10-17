@@ -36,13 +36,13 @@
 21:41:33.716 [     main] result=4000
 21:41:33.716 [pool-1-thread-3] 인터럽트 발생: sleep interrupted
 21:41:33.716 [pool-1-thread-2] 인터럽트 발생: sleep interrupted
-//invokeAny하면 내부적으로 Future 만들어서 실행하고
-//그 중 하나를 온료하고 나머지를 cancel(true)한다.
-//submit으로 받은 Future에 cancel 호출이 전파되지 않는다.
+//invokeAny하면 내부적으로 Future 만들어서 전부 실행하고
+//그중 하나가 완료하면 나머지를 cancel(true)한다.
 21:41:33.721 [     main] isCancelled=false
 21:41:33.721 [     main] isCancelled=false
 21:41:33.721 [     main] isCancelled=false
-//그래서 false다.
+//submit으로 받은 Future은 별개의 Future다.
+//cancel 호출이 전파되지 않는다.
 - ExecutorService는 풀에 있는 워커 스레드를 활용해 모든 작업을 병렬로 실행합니다.
 - 가장 먼저 call()을 성공적으로 완료한 작업의 결과를 반환합니다.
 - 나머지 작업은 cancel(true)로 인터럽트를 걸어 중단시킵니다.
