@@ -20,6 +20,7 @@ public class Connect {
     private static void connectionRefused() throws IOException {
         try {
             Socket socket = new Socket("localhost", 45678);
+            // TCP RST 패킷으로 refuse
         } catch (ConnectException e) {
             e.printStackTrace();
         }
