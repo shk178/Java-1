@@ -149,3 +149,171 @@ while (true) {
 } // 여러 브라우저가 동시에 요청해도 각 요청이 병렬로 처리되어 응답할 수 있다.
 ```
 - 251020-java-adv2/src/http/Server2Main.java // 요청을 별도의 스레드에서 처리
+- 251020-java-adv2/src/http/Http3ReqHandler.java
+```java
+BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), UTF_8));
+//서버가 UTF-8로 응답할 때 위 코드로 정확하게 디코딩 가능
+//서버가 EUC-KR로 응답할 때 한글이 깨질 수 있음
+PrintWriter writer = new PrintWriter(socket.getOutputStream(), false, UTF_8);
+// 내부적으로 UTF-8 인코딩을 사용해 문자열 → 바이트 변환해서 전송
+// 서버는 받은 바이트를 디코딩해서 문자열로 해석한다.
+// 클라이언트가 어떤 인코딩을 사용했는지 알아야 정확히 디코딩 가능
+// UTF_8이라고 적은 것은 본문의 인코딩이다.
+// HTTP/1.1 명세(RFC 7230)에 따르면, 헤더는 ISO-8859-1 (Latin-1)로 해석되어야 한다.
+// 대부분의 서버와 클라이언트는 헤더를 ASCII로 제한한다.
+// 헤더 줄 자체는 ASCII 또는 ISO-8859-1 범위 내 문자만 사용하는 게 안전한 표준 방식이다.
+// UTF_8이 포함하는 문자니까 헤더와 본문 인코딩을 따로 지정할 필요는 없다.
+OutputStream out = socket.getOutputStream();
+out.write("Content-Type: application/json; charset=UTF-8\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+out.write("{\"name\":\"shk\"}".getBytes(StandardCharsets.UTF_8));
+// 이렇게 안 해도 된다.
+```
+## HTTP 요청의 기본 구조
+```
+POST /api/users HTTP/1.1 (요청 라인: 메서드, URI, HTTP 버전)
+Host: example.com (헤더: 메타데이터)
+Content-Type: application/json
+Content-Length: 45
+
+{"name":"홍길동","age":30} (본문: 실제 데이터)
+```
+- 서버의 해석 과정
+- 1단계: TCP 연결 수립
+- 서버는 클라이언트와 TCP 연결을 맺고 바이트 스트림을 수신
+- 2단계: 요청 라인 파싱 (POST /api/users HTTP/1.1\r\n)
+- `\r\n` (CRLF)로 구분된 첫 줄을 읽어 메서드, 경로, 버전을 추출
+- 3단계: 헤더 파싱
+```
+Host: example.com\r\n
+Content-Type: application/json\r\n
+Content-Length: 45\r\n
+\r\n
+```
+- 각 헤더는 \r\n으로 구분
+- 빈 줄(\r\n\r\n)이 나올 때까지 헤더를 읽는다.
+- 헤더는 키: 값 형식으로 파싱된다.
+- 4단계: 본문 읽기
+- Content-Length 헤더를 확인하여 바이트 수만큼 읽는다.
+```
+POST /api/users HTTP/1.1
+Content-Type: application/json
+Content-Length: 67
+
+{"name":"홍길동","address":"성남시 중원구","hobbies":["독서","음악"]}
+```
+- 바이트 읽기: Content-Length(67바이트)만큼 읽는다.
+- 문자열 변환: UTF-8 등의 인코딩으로 문자열로 변환한다.
+- JSON 파싱: JSON 파서가 문자열을 객체로 변환한다.
+```
+// Node.js 예시
+const body = await readBody(request); // "{"name":"홍길동",...}"
+const data = JSON.parse(body); // {name: "홍길동", ...}
+```
+- 줄바꿈이 포함된 경우: JSON 내부의 줄바꿈
+```
+POST /api/messages HTTP/1.1
+Content-Type: application/json
+Content-Length: 52
+
+{"message":"첫 번째 줄\n두 번째 줄\n세 번째 줄"}
+// 파싱 전: "{\"message\":\"첫 줄\\n두 번째 줄\"}"
+// 파싱 후: {message: "첫 줄\n두 번째 줄"} (실제 줄바꿈)
+```
+- JSON 문자열 내부의 \n은 이스케이프된 문자로 취급
+- 실제로는 백슬래시(\)와 n 문자, 총 2바이트
+- JSON 파싱 후에 실제 줄바꿈 문자로 변환된다.
+- 멀티라인 JSON (실제 줄바꿈)
+```
+POST /api/users HTTP/1.1
+Content-Type: application/json
+Content-Length: 65
+
+{
+  "name": "홍길동",
+  "age": 30,
+  "city": "서울"
+}
+```
+- JSON 표준은 공백 문자(스페이스, 탭, 줄바꿈)를 허용
+- 서버는 Content-Length만큼 모든 바이트(줄바꿈 포함)를 읽는다.
+- JSON 파서가 공백을 무시하고 정상적으로 파싱
+- URL 인코딩된 본문의 줄바꿈
+- URL 인코딩: HTTP 요청에서 특수 문자나 한글 같은 비-ASCII 문자를 안전하게 전송하기 위해 사용하는 방식
+```
+POST /api/comment HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 58
+
+comment=%EC%B2%AB+%EC%A4%84%0A%EB%91%90+%EB%B2%88%EC%A7%B8+%EC%A4%84
+```
+```
+// JavaScript에서 인코딩
+const text = "첫 줄\n두 번째 줄";
+const encoded = encodeURIComponent(text);
+console.log(encoded);
+// 출력: %EC%B2%AB%20%EC%A4%84%0A%EB%91%90%20%EB%B2%88%EC%A7%B8%20%EC%A4%84
+// 디코딩
+const decoded = decodeURIComponent(encoded);
+console.log(decoded);
+// 출력: 첫 줄
+//      두 번째 줄
+```
+```
+- HTTP 프로토콜 제약: URL이나 폼 데이터에 특수 문자를 직접 쓸 수 없다.
+- 안전한 전송: 모든 문자를 ASCII 범위 내 문자로 변환
+- 특수 문자 처리:
+    - &는 파라미터 구분자
+    - =는 키-값 구분자
+    - ?는 쿼리 시작
+    - 이런 문자들과 구분하기 위해 인코딩
+<form method="POST" action="/api/comment">
+  <textarea name="comment">첫 줄
+두 번째 줄</textarea>
+  <button type="submit">전송</button>
+</form>
+이 폼을 제출하면 브라우저가 자동으로 URL 인코딩하여:
+comment=%EC%B2%AB+%EC%A4%84%0A%EB%91%90+%EB%B2%88%EC%A7%B8+%EC%A4%84
+이런 형태로 전송
+```
+- 줄바꿈은 %0A로 인코딩 (LF: \n) 또는 %0D%0A로 인코딩됩니다 (CRLF: \r\n)
+- 서버가 디코딩하면 실제 줄바꿈 문자가 된다.
+- Content-Length의 중요성: 줄바꿈을 포함한 모든 바이트를 정확히 계산 필요
+- 사용자 입력부터 서버 처리까지
+```
+1단계: 사용자가 브라우저에 입력
+사용자 입력: "안녕하세요"
+2단계: 브라우저가 폼 제출 시 URL 인코딩
+브라우저 내부:
+"안녕하세요"
+→ UTF-8 바이트로 변환: [EC 95 88 EB 85 95 ED 95 98 EC 84 B8 EC 9A 94]
+→ 퍼센트 인코딩: "%EC%95%88%EB%85%95%ED%95%98%EC%84%B8%EC%9A%94"
+3단계: HTTP 요청 전송
+브라우저가 서버로 보내는 실제 바이트:
+GET /search?q=%EC%95%88%EB%85%95%ED%95%98%EC%84%B8%EC%9A%94 HTTP/1.1\r\n
+Host: localhost:8080\r\n
+\r\n
+4단계: 서버가 TCP 소켓으로 받음
+// Socket에서 읽은 원시 문자열
+String reqString = "GET /search?q=%EC%95%88%EB%85%95%ED%95%98%EC%84%B8%EC%9A%94 HTTP/1.1\r\n...";
+5단계: 코드 실행 - query 추출
+int startIndex = reqString.indexOf("q="); // "q="의 위치 찾기
+int endIndex = reqString.indexOf(" ", startIndex + 2); // 공백 찾기
+String query = reqString.substring(startIndex + 2, endIndex); // query = "%EC%95%88%EB%85%95%ED%95%98%EC%84%B8%EC%9A%94"
+6단계: 디코딩
+String decode = URLDecoder.decode(query, UTF_8); // decode = "안녕하세요"
+7단계: HTML 응답 생성
+sb.append("<li>query: ").append(query).append("</li>").append("\n"); // <li>query: %EC%95%88%EB%85%95%ED%95%98%EC%84%B8%EC%9A%94</li>
+sb.append("<li>decode: ").append(decode).append("</li>").append("\n"); // <li>decode: 안녕하세요</li>
+8단계: 브라우저가 받아서 렌더링
+화면 표시:
+- query: %EC%95%88%EB%85%95%ED%95%98%EC%84%B8%EC%9A%94
+- decode: 안녕하세요
+query는 서버가 받은 그대로의 원시 문자열 - 네트워크를 통해 온 인코딩된 상태
+decode는 사람이 읽을 수 있는 형태로 변환된 것 - URLDecoder가 처리한 결과
+변환은 URLDecoder.decode() 호출 시점에만 발생 - 그 전까지는 계속 인코딩된 상태
+브라우저 → 서버는 항상 인코딩된 상태로 전송됨 - HTTP 프로토콜 규칙
+```
+- 251020-java-adv2/src/http2 // 요청, 응답 객체 생성
+- 251020-java-adv2/src/http3 // HTTP + Server + Applet = HttpServlet
+- HTTP 서버에서 실행되는 (작은 자바 프로그램=애플릿)
+- jakarta.servlet: 표준화
