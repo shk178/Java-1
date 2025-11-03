@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Hello</title>
+</head>
+<body>
+<h1 th:if="${name}" th:text="'안녕하세요, ' + ${name}">안녕</h1>
+<h1 th:unless="${name}">안녕하세요!</h1>
+</body>
+</html>
