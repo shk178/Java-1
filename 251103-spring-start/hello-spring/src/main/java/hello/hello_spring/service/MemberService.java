@@ -2,9 +2,12 @@ package hello.hello_spring.service;
 
 import hello.hello_spring.domain.Member;
 import hello.hello_spring.repository.MemberRepository;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.Optional;
 
+@Transactional
 public class MemberService {
     private final MemberRepository memberRepository;
     
@@ -36,6 +39,10 @@ public class MemberService {
         return memberRepository.findById(memberId);
     }
 }
+
+
+
+
 
 
 
