@@ -1,0 +1,317 @@
+Spring MVC에서 JSP가 어떻게 서블릿으로 만들어져 실행되는지 전체 흐름을 단계별로 정리해 설명해줄게. JSP 자체는 결국 서블릿의 일종이며, Spring이 JSP를 직접 서블릿으로 바꾸는 것이 아니라 톰캣(Tomcat) 같은 서블릿 컨테이너가 처리한다.
+
+---
+
+# 전체 흐름 요약
+
+JSP → (JSP 엔진) → .java 서블릿 파일 → .class → 서블릿 객체 → HTML 반환
+
+---
+
+# 1. 클라이언트가 `/xxx.jsp` 또는 뷰 리졸버가 지정한 JSP를 요청
+
+Spring MVC에서는 보통 JSP를 직접 URL로 호출하지 않고 다음과 같이 Controller가 뷰 이름을 반환한다.
+
+```java
+return "members/list";
+```
+
+그러면 Spring은 뷰 리졸버를 통해 다음 위치를 찾는다.
+
+```
+/WEB-INF/views/members/list.jsp
+```
+
+Spring은 JSP를 렌더링 대상 파일로만 지정하고, JSP 파일을 해석하고 실행하는 일은 톰캣이 처리한다.
+
+---
+
+# 2. 톰캣의 JSP 엔진(Jasper)이 JSP를 서블릿 코드로 변환
+
+톰캣은 JSP 파일을 최초로 요청받으면 그 JSP를 자바 서블릿 코드로 변환한다.
+예시:
+
+```
+list_jsp.jsp  →  org.apache.jsp.list_jsp.java
+```
+
+이 파일 안에는 다음과 같은 코드가 들어 있다.
+
+```java
+public final class list_jsp extends HttpJspBase {
+    public void _jspService(HttpServletRequest req, HttpServletResponse resp) {
+        out.write("<html>");
+        out.write("<body>");
+        out.write(" ... JSP 내용 ... ");
+        out.write("</body>");
+        out.write("</html>");
+    }
+}
+```
+
+즉, JSP를 사람이 읽기 어려운 형태의 서블릿 소스로 자동 변환한다.
+
+---
+
+# 3. 변환된 자바 서블릿 파일을 컴파일하여 .class 파일 생성
+
+변환된 `.java` 파일은 일반 자바 파일처럼 컴파일되어 `.class` 파일이 된다.
+
+```
+list_jsp.java → list_jsp.class
+```
+
+이제 이 클래스는 톰캣 내부에서 일반 서블릿과 동일하게 취급된다.
+
+---
+
+# 4. 서블릿 컨테이너가 JSP 서블릿 인스턴스를 생성하고 service() 실행
+
+톰캣은 `.class` 파일을 로딩해 인스턴스를 만들고, HTTP 요청이 들어올 때마다 실행한다.
+
+```
+_jspService(request, response)
+```
+
+이 메서드는 JSP의 실제 실행 메서드이며, 결과로 HTML을 만들어 response 객체에 write한다.
+
+---
+
+# 5. Spring MVC는 단지 JSP까지 요청을 전달하고 렌더링을 요청할 뿐
+
+Spring MVC의 동작은 다음과 같다.
+
+1. Controller → 뷰 이름 반환
+2. ViewResolver → JSP 파일 경로 찾기
+3. InternalResourceView가 JSP로 forward()
+4. 톰캣이 JSP를 서블릿으로 처리 후 HTML 출력
+
+즉, Spring MVC는 JSP를 직접 파싱하지 않으며, JSP를 톰캣에게 포워드하는 역할만 한다.
+
+---
+
+# 6. JSP 수정 시 다시 서블릿 재생성
+
+JSP 파일이 변경되면 톰캣은 자동으로 해당 JSP를 다시 컴파일하여 새로운 서블릿 클래스를 만든다.
+
+---
+
+# 정리
+
+Spring이 JSP를 서블릿으로 바꾸는 것이 아니라:
+
+1. Spring MVC는 단지 JSP의 경로를 결정하고 forward
+2. 톰캣 JSP 엔진(Jasper)이 JSP → 자바 서블릿으로 변환
+3. 컴파일 후 서블릿이 실행되어 HTML 출력
+
+---
+
+원하면 실제 톰캣이 생성한 JSP 서블릿 코드 예시도 보여줄 수 있어.
+
+JSP에서는 별도로 선언하지 않아도 자동으로 사용할 수 있는 변수(객체)들이 있다. 이것을 Implicit Objects(내장 객체)라고 부른다. JSP가 서블릿으로 변환될 때 자동으로 만들어져 `_jspService()` 안에 전달되거나 생성된다.
+
+아래는 JSP에서 기본적으로 바로 사용할 수 있는 모든 내장 객체 목록이다.
+
+---
+
+# 1. JSP 내장 객체 전체 목록
+
+## ■ 요청·응답 관련
+
+| 이름           | 타입                    | 설명          |
+| ------------ | --------------------- | ----------- |
+| request  | `HttpServletRequest`  | 클라이언트 요청 정보 |
+| response | `HttpServletResponse` | 서버의 응답 정보   |
+
+## ■ JSP 페이지 실행 관련
+
+| 이름              | 타입                  | 설명                                          |
+| --------------- | ------------------- | ------------------------------------------- |
+| out         | `JspWriter`         | HTML 출력 스트림 (`out.write()`)                 |
+| pageContext | `PageContext`       | JSP 페이지 전체 컨텍스트를 관리하는 객체                    |
+| config      | `ServletConfig`     | 서블릿 설정 정보                                   |
+| page        | `Object` (실제는 this) | JSP가 변환된 서블릿 인스턴스 자기 자신                     |
+| exception   | `Throwable`         | 에러 페이지에서만 사용 가능 (`isErrorPage=true` 때만 생성됨) |
+
+## ■ 세션/애플리케이션 관련
+
+| 이름              | 타입               | 설명                           |
+| --------------- | ---------------- | ---------------------------- |
+| session     | `HttpSession`    | 사용자 세션 객체                    |
+| application | `ServletContext` | 웹 애플리케이션(Application) 범위 저장소 |
+
+---
+
+# 2. 내장 객체는 어떻게 만들어질까?
+
+이 객체들은 JSP가 서블릿으로 변환될 때 `_jspService()` 안에서 미리 선언되거나 전달된다.
+
+예시 (JSP 변환 서블릿 코드 일부):
+
+```java
+public void _jspService(HttpServletRequest request, HttpServletResponse response) {
+    PageContext pageContext = null;
+    HttpSession session = null;
+    ServletContext application = null;
+    ServletConfig config = null;
+    JspWriter out = null;
+    Object page = this;
+    // ...
+}
+```
+
+따라서 JSP에서는 변수 선언 없이 곧바로:
+
+```jsp
+<%= request.getParameter("username") %>
+<%= session.getId() %>
+<%= out.write("hello") %>
+```
+
+이런 식으로 바로 사용할 수 있다.
+
+---
+
+# 3. 예외 객체(exception)는 예외 페이지에서만 가능
+
+다른 내장 객체와 다르게:
+
+```jsp
+<%@ page isErrorPage="true" %>
+```
+
+이렇게 지정한 페이지에서만 `exception` 변수를 사용할 수 있다.
+
+---
+
+# 4. 정리
+
+JSP에서 즉시 사용할 수 있고 선언이 필요 없는 내장 객체들은 다음 9개이다.
+
+* request
+* response
+* out
+* pageContext
+* config
+* page
+* exception (에러 페이지에서만)
+* session
+* application
+
+---
+
+원한다면 간단한 예제 JSP 보여주고 내장 객체가 어떻게 동작하는지 설명해줄게.
+
+`@WebServlet(name = "xxx", urlPatterns = "...")` 여기서 `name`은 서블릿 컨테이너가 내부적으로 서블릿을 식별하기 위해 사용하는 이름이다. 스프링의 빈 이름처럼 동작하는 부분이 있어서 그렇게 느껴지는 것이 맞다.
+
+아래에서 개념을 정리해줄게.
+
+---
+
+## 1. `name`은 *서블릿 이름(servlet name)*
+
+서블릿은 톰캣 같은 서블릿 컨테이너 내부에서 관리되는데, 컨테이너는 각 서블릿을 식별하기 위해 이름을 부여한다.
+`@WebServlet(name="respHeadServlet", ...)`에서 `"respHeadServlet"`이 바로 그 이름이다.
+
+이 이름은 다음과 같은 곳에서 사용된다.
+
+* web.xml에서 `<servlet-name>`과 동일한 역할
+* 서블릿 매핑 정보와 내부 관리용 레지스트리에 등록될 때 key로 사용
+* 특정 서블릿을 조회하거나 필터/리스너에서 서블릿 이름으로 매칭할 때 사용
+
+---
+
+## 2. URL 매핑(`urlPatterns`)과는 별개
+
+`urlPatterns="/resp-head"`은 HTTP 요청을 어떤 URL로 받을지를 정하는 매핑이다.
+반면 `name`은 프로그래밍적 관리용 이름이지 URL 매핑과 직접 관련은 없다.
+
+---
+
+## 3. 스프링의 빈 이름과 비슷하게 느껴지는 이유
+
+둘 다 다음 점에서 닮았다.
+
+* 컨테이너가 객체를 관리할 때 key 역할을 한다
+* 명시하지 않으면 autogenerated 이름이 붙는다
+* 특정 상황에서 이름으로 조회할 수 있다
+
+하지만 스프링 빈처럼 자유롭게 이름으로 호출하는 게 아니라, 서블릿 컨테이너 내부에서만 주로 사용된다.
+
+---
+
+## 4. 안 써도 된다
+
+`name`을 생략하면 다음과 같이 클래스 이름을 기반으로 자동 생성된다.
+
+```java
+@WebServlet(urlPatterns = "/resp-head")
+public class RespHeadServlet extends HttpServlet {
+}
+```
+
+톰캣이 서블릿을 등록할 때 내부적으로 `"RespHeadServlet"` 정도 이름을 붙여서 관리한다.
+
+---
+
+## 결론
+
+`@WebServlet`의 `name`은 서블릿 컨테이너가 그 서블릿을 식별하기 위한 관리용 이름이다.
+필수는 아니고, 주로 사람이 보기 좋게 지정하는 정도라고 이해하면 된다.
+
+필요하면 필터나 리스너에서 서블릿 이름으로 매칭하는 상황이 있을 때 의미가 생긴다.
+
+원하면 web.xml 시절의 `<servlet-name>`과 비교해서 더 자세히 설명해줄게.
+
+`for (Member member : ${members})`
+여기가 문제다.
+
+JSP에서는 scriptlet(<% %>) 안에 EL(${ })을 넣을 수 없다.
+그래서 저 코드는 아예 파싱조차 되지 않는다. EL은 JSP 태그나 HTML 영역에서만 동작하고, scriptlet은 자바 코드이기 때문에 `${members}`를 그대로 자바 코드에 집어넣을 수 없다.
+
+### 해결 방법 1: scriptlet만 쓰는 방식
+
+```jsp
+<%
+    List<Member> members = (List<Member>) request.getAttribute("members");
+    for (Member member : members) {
+%>
+        <tr>
+            <td><%= member.getId() %></td>
+            <td><%= member.getUsername() %></td>
+            <td><%= member.getAge() %></td>
+        </tr>
+<%
+    }
+%>
+```
+
+### 해결 방법 2: EL + JSTL로 깔끔하게 (추천)
+
+JSP에서는 scriptlet을 안 쓰는 것이 권장된다.
+
+상단에 JSTL 태그 추가
+
+```jsp
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+```
+
+그리고 JSTL로 출력
+
+```jsp
+<c:forEach var="member" items="${members}">
+    <tr>
+        <td>${member.id}</td>
+        <td>${member.username}</td>
+        <td>${member.age}</td>
+    </tr>
+</c:forEach>
+```
+
+### 요약
+
+* `${members}`는 scriptlet 안에서 사용할 수 없다.
+* scriptlet을 계속 쓸 거면 request.getAttribute로 꺼내야 한다.
+* 현대적 방식은 JSTL과 EL을 사용해 scriptlet을 제거하는 것이다.
+
+필요하면 맞는 구조로 전체 JSP 코드 다시 정리해줄까?
