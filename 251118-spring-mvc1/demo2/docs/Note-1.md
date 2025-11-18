@@ -1106,3 +1106,224 @@ RequestMappingHandlerAdapter 가 컨트롤러 실행 후 변환한다.
 * Model이 request attribute 로 바뀌는 과정(JSP 기준)
 * 스프링 MVC 호출 스택 흐름을 순서도처럼 정리해
   도 더 깊게 설명해줄게.
+
+스프링을 XML 기반으로 쓰는지, 스프링 부트(Java Config) 로 쓰는지에 따라 설정 위치가 달라진다.
+네 상황을 보면 old-style Controller를 쓰고 있으니 두 경우 모두 설명해줄게.
+
+---
+
+# 1. 스프링 부트 (자바 설정, @Configuration) 환경일 때
+
+스프링 부트는 ViewResolver를 자동 설정해주지 않는다.
+직접 `InternalResourceViewResolver` 를 등록해야 한다.
+
+## 설정 위치
+
+`@Configuration` + `@EnableWebMvc` 를 사용하는 WebMvc 설정 클래스에 작성한다.
+
+### 예시
+
+```java
+@Configuration
+@EnableWebMvc
+public class WebConfig implements WebMvcConfigurer {
+
+    @Bean
+    public InternalResourceViewResolver internalResourceViewResolver() {
+        InternalResourceViewResolver resolver = new InternalResourceViewResolver();
+        resolver.setPrefix("/WEB-INF/views/");
+        resolver.setSuffix(".jsp");
+        return resolver;
+    }
+}
+```
+
+이렇게 해두면 `return new ModelAndView("list")` 를 하면 자동으로:
+
+```
+/WEB-INF/views/list.jsp
+```
+
+를 찾는다.
+
+---
+
+# 2. XML 기반 web.xml + dispatcher-servlet.xml 환경일 때
+
+전통적인 스프링 MVC라면 보통 아래 경로에 XML 설정이 있다:
+
+```
+WEB-INF/app-servlet.xml
+```
+
+또는
+
+```
+WEB-INF/dispatcher-servlet.xml
+```
+
+여기에 ViewResolver를 추가한다.
+
+### 예시 (dispatcher-servlet.xml)
+
+```xml
+<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+    <property name="prefix" value="/WEB-INF/views/"/>
+    <property name="suffix" value=".jsp"/>
+</bean>
+```
+
+이렇게 하면 `ModelAndView("list")` → `/WEB-INF/views/list.jsp` 로 매핑된다.
+
+---
+
+# 3. 스프링 부트 + application.properties 방식
+
+스프링 부트 1.x, 2.x에서 JSP를 쓸 때 가능한 방식이다.
+
+`src/main/resources/application.properties`
+
+```
+spring.mvc.view.prefix=/WEB-INF/views/
+spring.mvc.view.suffix=.jsp
+```
+
+다만 이것은 Boot의 MVC 자동설정이 있을 때만 적용되며,
+`@EnableWebMvc` 를 쓰면 이 설정은 무시된다.
+
+---
+
+# 어떤 방식을 사용해야 할까?
+
+지금 네가 Old-style Controller (`implements Controller`) 를 사용하는 걸 보면
+스프링 부트에서 WebMvcConfigurer로 직접 ViewResolver를 등록하는 방식일 가능성이 높다.
+
+가장 안전한 설정은 아래 한 줄이다:
+
+## WebConfig.java
+
+```java
+@Bean
+public InternalResourceViewResolver viewResolver() {
+    InternalResourceViewResolver resolver = new InternalResourceViewResolver();
+    resolver.setPrefix("/WEB-INF/views/");
+    resolver.setSuffix(".jsp");
+    return resolver;
+}
+```
+
+---
+
+원한다면 네 프로젝트 구조(폴더 리스트나 핵심 설정 파일) 보여주면
+어디에 딱 붙여야 하는지 정확하게 짚어줄게.
+
+예외 메시지의 핵심은 단 하나다:
+
+```
+members 가 null 이다 → JSP에서 for-each 하다가 NPE 발생
+```
+
+그 말은 즉,
+
+OldController에서 list.jsp로 forward 했지만, list.jsp에 필요한 "members"를 넘겨주지 않았다
+는 의미다.
+
+---
+
+# 원인 요약
+
+`OldController`는 이렇게 되어 있지?
+
+```java
+return new ModelAndView("/WEB-INF/views/list.jsp");
+```
+
+혹은
+
+```java
+return new ModelAndView("list");
+```
+
+그런데 OldController에서는 request나 model에 "members" attribute를 넣지 않았다.
+
+그래서 JSP에서:
+
+```jsp
+for (Member m : ${members})
+```
+
+이 부분에서 `${members}`가 null이라서 `iterator()` 호출하면서 NPE가 터진다.
+
+---
+
+# 해결 방법
+
+## 1) OldController에서 model 데이터를 넣어주기
+
+이렇게 바꾸면 된다.
+
+```java
+@Component("s6/old-controller")
+public class OldController implements Controller {
+
+    @Override
+    public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+        MemberRepository repo = MemberRepository.getInstance();
+        List<Member> members = repo.findAll();
+
+        ModelAndView mv = new ModelAndView("list");
+        mv.addObject("members", members);
+
+        return mv;
+    }
+}
+```
+
+이제 JSP에서도 정상 동작한다.
+
+---
+
+# 2) JSP가 사용하는 attribute 이름이 맞는지 확인
+
+JSP에서는 보통 이렇게 되어 있을 것이다:
+
+```jsp
+<c:forEach var="member" items="${members}">
+```
+
+또는 scriptlet 기반:
+
+```jsp
+for (Member member : (List<Member>)request.getAttribute("members")) {
+```
+
+둘 다 `members` 라는 이름을 사용한다.
+
+그러므로 Controller에서도 반드시 `"members"` 이름을 맞춰줘야 한다.
+
+---
+
+# 3) 헷갈리기 쉬운 포인트
+
+### Old-style Controller에서는 자동 Model 바인딩 없음
+
+`@Controller` + `@RequestMapping` 방식에서는 인자로 `Model model`을 넣으면 자동 주입되지만,
+Old-style (`implements Controller`)은 그런 기능이 없다.
+
+직접:
+
+```java
+mv.addObject("key", value)
+```
+
+를 해줘야 한다.
+
+---
+
+# 결론
+
+NPE의 원인은 OldController가 members를 JSP로 전달하지 않아서이다.
+위에서 보여준 방식대로 ModelAndView에 addObject 하면 해결된다.
+
+원하면 list.jsp 코드도 보여주면 더 정확하게 점검해줄게.
