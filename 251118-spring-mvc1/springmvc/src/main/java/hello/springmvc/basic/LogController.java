@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class LogController {
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    private final Logger log = LoggerFactory.getLogger(getClass()); // getClass() = LogController.class
     @RequestMapping("/basic/log")
     public String runLog() {
         String name = "Spring";
