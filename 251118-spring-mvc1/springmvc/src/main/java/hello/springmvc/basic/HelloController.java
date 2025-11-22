@@ -34,4 +34,8 @@ public class HelloController {
     public String mapConsumes() {
         return "ok";
     }
+    @RequestMapping(value = "/basic/hello", produces = "text/html")
+    public String mapProduces() {
+        return "ok";
+    }
 }

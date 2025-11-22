@@ -432,3 +432,536 @@ public String webDash() { ... }
 이럴 때 바로 이 방식을 사용해.
 
 원하면 `params`로 체크할 수 있는 모든 형태(있음/없음/특정값/여러 조건)를 표로 정리해줄게.
+
+`@RequestMapping`에서 `produces`를 설정한다는 것은 컨트롤러 메서드가 클라이언트에게 어떤 형태(MIME 타입)의 데이터를 반환할 것인지 명시하는 것이다.
+
+예시:
+
+```java
+@RequestMapping(value = "/user", produces = "application/json")
+public UserDto getUser() {
+    return new UserDto("kim", 20);
+}
+```
+
+위 메서드는 반환 결과가 JSON임을 선언한다.
+따라서 스프링 MVC는 내부적으로 다음과 같은 일을 한다.
+
+---
+
+### 1. 클라이언트의 Accept 헤더와 매칭
+
+HTTP 요청에는 다음과 같은 헤더가 올 수 있다.
+
+```
+Accept: application/json
+Accept: text/html
+```
+
+클라이언트는 서버에게 "나는 이 형식으로 응답을 받고 싶다"라고 표현한다.
+
+`produces = "application/json"`으로 설정된 메서드는
+Accept가 JSON일 때 매칭되고 호출된다.
+Accept가 맞지 않으면 406 Not Acceptable을 반환할 수 있다.
+
+---
+
+### 2. 어떤 메시지 컨버터를 사용할지 선택하는 기준이 된다
+
+스프링은 반환 타입을 변환할 때 `HttpMessageConverter`를 사용한다.
+
+`produces = "application/json"`
+→ JSON 변환용 컨버터(Jackson 등)를 사용
+
+`produces = "text/plain"`
+→ 문자열 전송 컨버터 사용
+
+즉, produces는 응답 변환 전략을 결정하는 힌트가 된다.
+
+---
+
+### 3. 여러 메서드 오버로딩에도 활용할 수 있다
+
+```java
+@RequestMapping(value = "/data", produces = "application/json")
+public Data jsonData() { ... }
+
+@RequestMapping(value = "/data", produces = "text/html")
+public String htmlData() { ... }
+```
+
+같은 URL이라도 클라이언트가 요청한 Accept에 따라
+JSON 버전 또는 HTML 버전 중 하나가 호출될 수 있다.
+
+---
+
+### 정리
+
+| 설정 위치      | 의미                                  |
+| ---------- | ----------------------------------- |
+| `consumes` | 클라이언트가 보내는 Content-Type 조건 (입력 데이터) |
+| `produces` | 서버가 응답하는 MIME 타입 조건 (출력 데이터)        |
+
+---
+
+### 결론
+
+`produces`는
+"이 컨트롤러는 어떤 형식으로 응답한다"
+그리고
+"요청의 Accept 헤더가 그 형식과 맞지 않으면 매칭되지 않는다"
+는 의미다.
+
+필요할 때 명시적으로 선언하면 API 명확성, 메시지 변환 안정성, 엔드포인트 선택 기능을 얻을 수 있다.
+
+원하면 `consumes`, `headers`, `params`와 함께 쓰이는 조합 방식도 이어서 설명해줄 수 있다.
+
+`@RequestMapping`은 여러 조건을 동시에 걸어서 요청을 정교하게 분기할 수 있다.
+`consumes`, `produces`, `params`, `headers`, `method`, `path` 등을 조합하면 된다.
+
+핵심은
+“요청이 모든 조건을 만족할 때만 해당 메서드가 매핑된다”
+라는 점이다.
+
+---
+
+## 1. consumes + produces 조합
+
+입력 형식과 출력 형식을 동시에 제한할 수 있다.
+
+```java
+@RequestMapping(
+    value = "/user",
+    method = RequestMethod.POST,
+    consumes = "application/json",
+    produces = "application/json"
+)
+public UserDto createUser(@RequestBody UserDto dto) {
+    return dto;
+}
+```
+
+조건:
+
+* 요청의 Content-Type = application/json 이어야 함
+* Accept = application/json 이어야 함
+
+만족하지 않으면:
+
+* Content-Type이 안 맞으면 415 Unsupported Media Type
+* Accept가 안 맞으면 406 Not Acceptable
+
+---
+
+## 2. params 조합 (쿼리 파라미터 조건)
+
+```java
+@RequestMapping(value = "/search", params = "type=admin")
+public String adminSearch() { return "admin"; }
+
+@RequestMapping(value = "/search", params = "type=user")
+public String userSearch() { return "user"; }
+```
+
+같은 URL이지만 `?type=` 값에 따라 실행 메서드가 달라진다.
+
+파라미터 존재 여부만 조건으로도 가능하다:
+
+```java
+@RequestMapping(value = "/search", params = "keyword")
+public String searchWithKeyword() { ... }
+```
+
+---
+
+## 3. headers 조합 (요청 헤더 조건)
+
+```java
+@RequestMapping(value = "/data", headers = "X-API-VERSION=2")
+public String version2() { return "v2"; }
+```
+
+특정 헤더가 있어야 실행된다.
+
+여러 개도 가능:
+
+```java
+@RequestMapping(value = "/data", headers = {"X-API-VERSION=2", "X-REGION=KR"})
+```
+
+---
+
+## 4. method + produces + params 같이 쓰기
+
+컨트롤러가 복잡한 API 요청을 구분할 때 활용도 높다.
+
+```java
+@RequestMapping(
+    value = "/report",
+    method = RequestMethod.GET,
+    params = "format=excel",
+    produces = "application/vnd.ms-excel"
+)
+public byte[] excelReport() { ... }
+
+@RequestMapping(
+    value = "/report",
+    method = RequestMethod.GET,
+    params = "format=pdf",
+    produces = "application/pdf"
+)
+public byte[] pdfReport() { ... }
+```
+
+같은 URL, GET 요청이지만
+파라미터와 응답 타입에 따라 메서드가 결정된다.
+
+---
+
+## 5. URL + 조건 + 조건 + 조건 … 조합의 의미
+
+스프링은 내부적으로 다음 순서로 판단한다.
+
+1. HTTP Method 일치 여부
+2. URL Path 일치 여부
+3. params 조건 일치 여부
+4. headers 조건 일치 여부
+5. consumes 조건(Content-Type) 일치 여부
+6. produces 조건(Accept) 일치 여부
+
+모두 통과해야 매핑된다.
+
+---
+
+## 실전에서 주로 쓰는 패턴
+
+현업에서 많이 쓰는 조합 예시만 정리하면 다음과 같다.
+
+| 목적                   | 자주 쓰는 조합                                    |
+| -------------------- | ------------------------------------------- |
+| 요청 타입에 따라 분기         | `consumes`                                  |
+| 응답 타입에 따라 분기         | `produces`                                  |
+| 쿼리 파라미터에 따라 분기       | `params`                                    |
+| 헤더 기반 API 버저닝        | `headers`                                   |
+| 같은 URL로 여러 API 버전 운영 | `params + produces` 또는 `headers + produces` |
+
+---
+
+## 참고 포인트
+
+* 조건이 많아지면 코드 가독성이 떨어질 수 있으므로, 너무 복잡해지면 URL을 나누거나 `@GetMapping`, `@PostMapping` 같은 특화 어노테이션을 사용하는 것이 더 좋다.
+* 조건 충돌이 있으면 스프링이 어떤 메서드를 선택해야 할지 모르게 되어 `Ambiguous mapping` 예외가 발생할 수 있다.
+
+---
+
+원하면
+
+* Spring MVC가 어떤 기준으로 “가장 정확히 맞는 메서드”를 선택하는 매핑 우선순위
+* consumes/produces에서 여러 MIME 타입을 나열하는 방식
+* `@GetMapping`, `@PostMapping`에 같은 옵션 넣는 방식
+
+이 중 어떤 내용을 더 다뤄주면 도움이 될까?
+
+스프링이 요청을 매핑할 때 단순히 “맞다/아니다”만 보는 것이 아니라
+체크해야 할 규칙들을 단계별로 검사한 뒤, 어느 단계에서 실패했는지에 따라 다른 종류의 오류를 반환한다.
+
+즉, 오류 메시지는 어떤 매핑 조건이 충족되지 않았는지 스프링이 판단해서 결정하는 결과다.
+개발자가 명시적으로 “415로 반환해라” 같은 코드를 쓰지 않아도 스프링이 상황에 따라 맞는 상태 코드를 넣어준다.
+
+---
+
+## 매핑 실패 판단의 우선순위
+
+요청이 들어오면 스프링은 아래 순서로 매핑을 시도한다.
+
+1. URL Path 검사
+2. HTTP Method 검사
+3. params 검사
+4. headers 검사
+5. consumes 검사 (요청 Content-Type)
+6. produces 검사 (요청 Accept)
+
+이 순서 중 어디에서 실패했는가에 따라 HTTP 오류가 달라진다.
+
+---
+
+## 어떤 조건에서 실패하면 어떤 오류가 나는지
+
+아래는 실전에서 많이 겪는 케이스를 상태코드 기준으로 정리한 표다.
+
+| 실패 원인                             | 반환되는 오류 코드                 | 예                               |
+| --------------------------------- | -------------------------- | ------------------------------- |
+| URL에 맞는 매핑 자체가 없음                 | 404 Not Found              | `/unknown` 요청                   |
+| URL은 맞는데 HTTP 메서드가 다름             | 405 Method Not Allowed     | POST로 호출했는데 GET만 허용             |
+| Content-Type이 요구 조건(consumes)과 다름 | 415 Unsupported Media Type | 컨트롤러는 JSON만 받는데 form-data로 요청   |
+| Accept가 produces와 맞지 않음           | 406 Not Acceptable         | 컨트롤러는 JSON만 주는데 클라이언트가 HTML만 원함 |
+| 매핑은 여러 개인데 어떤 것을 선택해야 할지 모름       | 500 Ambiguous mapping      | 조건이 중복되어 매핑 충돌                  |
+
+즉, 스프링은
+“어떤 단계에서 실패했는가”를 근거로 오류를 선택한다.
+
+---
+
+## 스프링이 오류를 선택하는 방식은 ‘추론’이다
+
+예를 들어 다음 상황을 생각해보자.
+
+* `/user` 경로를 가진 컨트롤러가 존재
+* GET만 허용
+* produces = application/json
+
+그런데 클라이언트가 다음 요청을 보냄:
+
+```
+POST /user
+Accept: text/html
+```
+
+이 경우 스프링의 내부 판단 흐름은 다음과 같다.
+
+1. URL 일치 → 통과
+2. Method 불일치 → 여기서 실패 → 따라서 405 반환
+   (스프링은 그 다음 조건(params, headers 등)을 더 보지 않음)
+
+즉, 가장 먼저 충돌한 조건이 오류 원인이 된다.
+
+---
+
+## 또 다른 예시 1
+
+```
+GET /user
+Content-Type: application/xml
+```
+
+컨트롤러
+
+```
+consumes = application/json
+```
+
+판단 흐름
+
+1. URL 일치
+2. Method 일치
+3. params 조건 없음
+4. headers 조건 없음
+5. consumes 충돌 → 415 반환
+
+---
+
+## 또 다른 예시 2
+
+```
+GET /user
+Accept: text/html
+```
+
+컨트롤러
+
+```
+produces = application/json
+```
+
+판단 흐름
+
+1. URL 일치
+2. Method 일치
+3. params 조건 없음
+4. headers 조건 없음
+5. consumes 조건 없음
+6. produces 충돌 → 406 반환
+
+---
+
+## 결론
+
+* 스프링 MVC는 매핑 조건을 일련의 규칙 순서대로 검사한다.
+* 어느 조건에서 실패했는지에 따라 상태코드가 자동으로 결정된다.
+* 개발자가 `return 406;` 같은 코드를 쓰는 것이 아니라, 스프링의 매핑 로직이 실패 지점을 추론하여 가장 적절한 오류를 응답한다.
+
+필요하다면
+각 오류 상황을 직접 디버그하거나 로그로 볼 수 있는 방법 (`HandlerMapping`, `HandlerMethod`, `Trace`, `debug log`)을 추가로 알려줄 수도 있다.
+그 부분도 궁금한가?
+
+두 어노테이션은 결국 응답 데이터를 HTTP 바디에 그대로 담아서 전송한다는 공통 목적을 가진다.
+하지만 적용 범위와 동작 방식이 다르다.
+
+---
+
+## @ResponseBody
+
+* 메서드 단위에 적용
+* 반환값을 뷰 이름으로 해석하지 않고 그대로 HTTP 응답 본문으로 전송
+* 문자열이면 문자열 그대로, 객체면 JSON 변환 후 바디에 담긴다.
+
+```java
+@ResponseBody
+@GetMapping("/hello")
+public String hello() {
+    return "hello";
+}
+```
+
+이 경우 `"hello"`라는 문자열이 그대로 본문에 실려 전송된다.
+
+만약 @ResponseBody가 없었다면 같은 코드는 `"hello"`라는 뷰 이름을 가진 템플릿을 찾으려는 시도를 하게 된다.
+
+---
+
+## @RestController
+
+* 클래스 단위에 적용
+* 내부의 모든 핸들러 메서드에 자동으로 `@ResponseBody` 기능 부여
+* 즉, 클래스에 선언하면 해당 컨트롤러의 모든 메서드가 기본적으로 JSON/문자열 등 명시적 응답 바디를 반환하게 된다.
+
+```java
+@RestController
+public class HelloController {
+    @GetMapping("/hello")
+    public String hello() {
+        return "hello";
+    }
+}
+```
+
+여기서는 `@ResponseBody`를 명시하지 않아도 같은 동작을 한다.
+
+---
+
+## 차이 요약
+
+| 항목       | @RestController                 | @ResponseBody             |
+| -------- | ------------------------------- | ------------------------- |
+| 적용 위치    | 클래스                             | 메서드                       |
+| 효과       | 클래스 내부 모든 메서드에 @ResponseBody 적용 | 해당 메서드에만 적용               |
+| 용도       | API 개발 전체 컨트롤러                  | 특정 메서드만 JSON/문자열 반환하게 할 때 |
+| 기본 반환 처리 | 응답 바디                           | 응답 바디                     |
+
+---
+
+## @RestController = @Controller + @ResponseBody 합성
+
+스프링 소스 관점에서 보면
+`@RestController`는 다음 두 가지 어노테이션의 기능을 합친 것이다.
+
+```
+@Controller
+@ResponseBody
+```
+
+따라서 `@RestController`는 템플릿 렌더링 방식의 웹 페이지를 만드는 것이 아니라
+API 서버(REST API, JSON API)를 만들 때 사용한다.
+
+---
+
+## 어떤 상황에서 무엇을 쓰는가
+
+* JSON API 서버 / REST API 개발 → `@RestController`
+* 웹페이지(타임리프 등 템플릿) + 특정 일부 API만 JSON 응답 → `@Controller + @ResponseBody`
+
+예를 들어 웹 페이지를 렌더링하는 컨트롤러인데
+특정 메서드만 AJAX 응답을 반환할 때:
+
+```java
+@Controller
+public class HomeController {
+
+    @GetMapping("/")
+    public String home() {
+        return "index";
+    }
+
+    @ResponseBody
+    @GetMapping("/api/user")
+    public User getUser() {
+        return new User("kim", 20);
+    }
+}
+```
+
+---
+
+## 정리
+
+* @ResponseBody는 메서드의 반환값을 그대로 응답 바디로 보낸다.
+* @RestController는 컨트롤러 전체 메서드에 @ResponseBody 효과를 자동 적용한다.
+
+추가로 궁금하면 이어서 설명할 수 있는 내용:
+
+* @RestController에서 문자열 반환 시 text/plain인지 JSON인지 결정되는 기준
+* 객체를 반환할 때 어떤 MessageConverter가 동작하는지
+* @Controller와 ModelAndView 흐름 비교
+
+어떤 부분 더 알고 싶어?
+
+1. 실제 서비스 개발에서 System.out.println 대신 로깅 라이브러리를 사용하는 주된 이유가 무엇일까요?
+- A 코드가 더 짧아져요.
+- B 성능이 훨씬 빨라요.
+- (답)로그 레벨 설정으로 출력 레벨을 조절할 수 있어요.
+- D 다른 개발자가 보기에 더 멋있어요.
+  해설
+  로깅 라이브러리는 레벨 설정으로 필요한 로그만 출력하고, 성능 최적화가 되어있어요. 실제 운영 환경에서 시스템 자원을 효율적으로 사용하며 문제를 추적할 수 있게 도와주죠.
+2. 애플리케이션의 로깅 레벨을 INFO로 설정했다면, 어떤 레벨의 로그 메시지가 출력될까요?
+- A TRACE, DEBUG, INFO, WARN, ERROR 모두
+- B DEBUG, INFO, WARN, ERROR
+- (답)INFO, WARN, ERROR
+- D WARN, ERROR
+  해설
+  로깅 레벨은 설정된 레벨 이상(더 심각한)의 로그만 출력하도록 동작해요. 따라서 INFO 레벨로 설정하면 INFO, WARN, ERROR 로그가 보이게 된답니다.
+3. Spring MVC에서 @RequestMapping 어노테이션은 기본적으로 URL 경로 외에 어떤 정보를 함께 조합해서 요청을 특정 컨트롤러 메서드에 매핑할 수 있을까요?
+- A 요청 시간
+- B 서버 자원 사용량
+- (답)HTTP 메서드 (GET, POST 등)
+- D 클라이언트 IP 주소
+  해설
+  @RequestMapping은 URL 뿐만 아니라 HTTP 메서드(GET, POST 등), 파라미터 조건, 헤더 조건, 미디어 타입 등을 조합하여 요청을 매핑할 수 있어요. 이를 통해 더 유연하고 구체적인 매핑이 가능해지죠.
+4. /users/{userId}와 같은 형식으로 URL 경로 자체에 값을 포함시켜 요청을 처리하는 방식을 무엇이라고 부르나요?
+- A 쿼리 파라미터
+- B 폼 데이터
+- C 메시지 바디
+- (답)경로 변수 (Path Variable)
+  해설
+  URL 경로 일부에 변수를 넣는 방식을 경로 변수(Path Variable)라고 해요. REST API 설계에서 특정 리소스를 식별할 때 자주 사용되는 형태랍니다.
+5. HTTP 요청 시 데이터를 전달하는 방식 중, request.getParameter()로 편리하게 조회할 수 있는 방식은 무엇인가요?
+- (답)URL 쿼리 파라미터와 HTML Form 데이터
+- B HTTP 메시지 바디에 담긴 데이터
+- C HTTP 헤더에 담긴 데이터
+- D 쿠키에 담긴 데이터
+  해설
+  URL에 붙는 쿼리 파라미터와 HTML <form> 태그로 전송되는 데이터는 request.getParameter()로 동일하게 조회할 수 있어요. 둘 다 요청 파라미터 형식이기 때문이죠.
+6. Spring MVC의 @ModelAttribute는 주로 어떤 목적으로 사용될까요?
+- A HTTP 메시지 바디의 데이터를 자바 객체로 변환할 때
+- B 컨트롤러 메서드의 반환 값을 HTTP 응답 본문에 넣을 때
+- (답)HTTP 요청 파라미터들을 모아서 자바 객체에 바인딩할 때
+- D HTTP 헤더 정보를 조회할 때
+  해설
+  @ModelAttribute는 요청 파라미터(쿼리 스트링, 폼 데이터)의 이름과 객체의 필드 이름이 같을 때, 해당 객체의 세터(setter)를 호출하여 자동으로 값을 바인딩해주는 역할을 해요.
+7. Spring MVC에서 @RequestBody나 @ResponseBody 어노테이션이 제대로 동작하기 위해 핵심적으로 필요한 내부 컴포넌트는 무엇일까요?
+- A ViewResolver
+- B Template Engine
+- (답)HTTP Message Converter
+- D DispatcherServlet
+  해설
+  HTTP 메시지 컨버터는 HTTP 요청 본문의 데이터를 원하는 자바 객체로 변환하거나, 자바 객체를 HTTP 응답 본문으로 변환하는 역할을 해요. @RequestBody와 @ResponseBody는 이 컨버터를 사용한답니다.
+8. 클라이언트에서 HTTP 요청 본문에 JSON 데이터를 담아 보낼 때, Spring이 이를 적절한 자바 객체로 자동 변환하기 위해 주로 확인하는 HTTP 헤더는 무엇일까요?
+- A Accept
+- B Authorization
+- (답)Content-Type
+- D User-Agent
+  해설
+  클라이언트가 보내는 Content-Type 헤더는 요청 본문에 담긴 데이터의 타입을 알려줘요. Spring은 이 정보를 보고 어떤 HTTP 메시지 컨버터(예: JSON용 Jackson)를 사용할지 결정한답니다.
+9. HTML 템플릿을 사용해 동적인 웹 페이지를 응답하는 @Controller와 달리, API 서버처럼 데이터를 HTTP 응답 본문에 직접 담아 보내기 편리하도록 @ResponseBody 기능이 추가된 어노테이션은 무엇일까요?
+- A @Service
+- B @Repository
+- C @Component
+- (답)@RestController
+  해설
+  @RestController는 @Controller와 @ResponseBody의 기능을 합친 어노테이션이에요. 뷰 템플릿 대신 데이터(주로 JSON)를 응답 본문에 직접 담아 보내는 API 컨트롤러에 적합하죠.
+10. 컨트롤러에서 HTTP 응답 본문 데이터와 함께 HTTP 상태 코드를 동적으로 변경하거나, 헤더 정보까지 세밀하게 제어하고 싶을 때 주로 사용하는 Spring의 반환 타입은 무엇일까요?
+- A String
+- B void
+- C ModelAndView
+- (답)ResponseEntity
+  해설
+  ResponseEntity는 HTTP 응답 전체를 객체로 표현해요. 응답 본문 데이터 외에 HTTP 상태 코드, 헤더 정보 등을 프로그래밍적으로 설정하여 동적으로 제어할 수 있는 강력한 반환 타입이랍니다.
