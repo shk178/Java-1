@@ -1,0 +1,60 @@
+<!DOCTYPE HTML>
+<html xmlns:th="www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <link href="../css/bootstrap.min.css"
+          th:href="@{/css/bootstrap.min.css}"
+          rel="stylesheet">
+</head>
+<body>
+<div class="container" style="max-width: 600px">
+    <div class="py-5 text-center">
+        <h2>상품 목록</h2>
+    </div>
+    <div class="row">
+        <div class="col">
+            <button class="btn btn-primary float-end" onclick="location.href='addForm.html'"
+                    th:onclick="|location.href='@{/basic/items/add}'|"
+                    type="button">상품 등록</button>
+        </div>
+    </div>
+    <hr class="my-4">
+    <div>
+        <table class="table">
+            <thead>
+            <tr>
+                <th>id</th>
+                <th>name</th>
+                <th>price</th>
+                <th>quantity</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${items}">
+                <td>
+                    <a href="item.html"
+                       th:href="@{/basic/items/{id}(id=${item.id}, key='value')}"
+                       th:text="${item.id}">id</a>
+                </td>
+                <td>
+                    <a href="item.html"
+                       th:href="@{|/basic/items/${item.id}|}"
+                       th:text="${item.name}">name</a>
+                </td>
+                <td>
+                    <a href="item.html"
+                       th:href="@{|/basic/items/${item.id}|}"
+                       th:text="${item.price}">price</a>
+                </td>
+                <td>
+                    <a href="item.html"
+                       th:href="@{|/basic/items/${item.id}|}"
+                       th:text="${item.quantity}">quantity</a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>
