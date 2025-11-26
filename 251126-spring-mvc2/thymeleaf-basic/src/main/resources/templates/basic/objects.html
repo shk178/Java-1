@@ -1,0 +1,22 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Objects</title>
+</head>
+<body>
+<ul>
+    <li><span th:text="${req}"></span></li>
+    <li><span th:text="${resp}"></span></li>
+    <li><span th:text="${session}"></span></li>
+    <li><span th:text="${servletContext}"></span></li>
+    <li><span th:text="${#locale}"></span></li>
+</ul>
+<ul>
+    <li><span th:text="${param}"></span></li>
+    <li><span th:text="${param.paramKey}"></span></li>
+    <li><span th:text="${session.sessionData}"></span></li>
+    <li><span th:text="${@helloBean.hello('Spring')}"></span></li>
+</ul>
+</body>
+</html>

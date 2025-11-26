@@ -1,0 +1,31 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Variable</title>
+</head>
+<body>
+<ul>
+    <li><span th:text="${userA.username}"></span></li>
+    <li><span th:text="${userA['username']}"></span></li>
+    <li><span th:text="${userA.getUsername()}"></span></li>
+</ul>
+<ul>
+    <li><span th:text="${userList[0].username}"></span></li>
+    <li><span th:text="${userList[0]['username']}"></span></li>
+    <li><span th:text="${userList[0].getUsername()}"></span></li>
+</ul>
+<ul>
+    <li><span th:text="${userMap['A'].username}"></span></li>
+    <li><span th:text="${userMap['A']['username']}"></span></li>
+    <li><span th:text="${userMap['A'].getUsername()}"></span></li>
+</ul>
+<div th:with="localvariable=${userList[0]}">
+    <ul>
+        <li><span th:text="${localvariable.username}"></span></li>
+        <li><span th:text="${localvariable['username']}"></span></li>
+        <li><span th:text="${localvariable.getUsername()}"></span></li>
+    </ul>
+</div>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Link</title>
+</head>
+<body>
+<ul>
+    <li><a th:href="@{/hello}">/hello</a></li>
+    <li><a th:href="@{/hello(param1=${param1})}">/hello?param1=data1</a></li>
+    <li><a th:href="@{/hello(param1=${param1}, param2=${param2})}">/hello?param1=data1&param2=data2</a></li>
+    <li><a th:href="@{/hello/{param1}/{param2}(param1=${param1}, param2=${param2})}">/hello/data1/data2</a></li>
+    <li><a th:href="@{/hello/{param1}(param1=${param1}, param2=${param2})}">/hello/data1?param2=data2</a></li>
+</ul>
+</body>
+</html>

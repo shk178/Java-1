@@ -1,0 +1,17 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Text</title>
+</head>
+<body>
+<ul>
+    <li><span th:text="${text}"></span></li>
+    <li>[[${text}]]</li>
+</ul>
+<ul>
+    <li><span th:utext="${utext}"></span></li>
+    <li>[(${utext})]</li>
+</ul>
+</body>
+</html>
