@@ -1,0 +1,23 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Literal</title>
+</head>
+<body>
+<ul>
+    <li><span th:text="'hello'"></span></li>
+    <li><span th:text='hello'></span></li>
+    <li><span th:text="'hello spring'"></span></li>
+    <li><span th:text="|It's good|"></span></li>
+    <li><span th:text="'It\'s good'"></span></li>
+    <li><span th:text="10"></span></li>
+    <li><span th:text="3.14"></span></li>
+    <li><span th:text="true"></span></li>
+    <li><span th:text="false"></span></li>
+    <li><span th:text="null"></span></li>
+    <li><span th:text="|Hello ${data}|"></span></li>
+    <li><span th:text="'Hello ' + ${data}"></span></li>
+</ul>
+</body>
+</html>

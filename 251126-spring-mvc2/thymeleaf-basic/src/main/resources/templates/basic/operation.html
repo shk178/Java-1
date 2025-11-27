@@ -1,0 +1,18 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Operation</title>
+</head>
+<body>
+<ul>
+    <li><span th:text="${num1} + ${num2}"></span></li>
+    <li><span th:text="${num1} == 1"></span></li>
+    <li><span th:text="${num1} > 2"></span></li>
+    <li><span th:text="(${num2} % 2 == 0)?'짝수':'홀수'"></span></li>
+    <li><span th:text="${bool1} and ${bool2}"></span></li>
+    <li><span th:text="${bool1} or ${bool2}"></span></li>
+    <li><span th:text="${null0}?'데이터 없음':'데이터 있음'"></span></li>
+</ul>
+</body>
+</html>
