@@ -1,0 +1,13 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>FragmentMain</title>
+</head>
+<body>
+<div th:insert="~{template/fragment/footer :: copy}"></div>
+<div th:replace="~{template/fragment/footer :: copy}"></div>
+<div th:replace="template/fragment/footer :: copy"></div>
+<div th:replace="~{template/fragment/footer :: copyParam ('데이터1', '데이터2')}"></div>
+</body>
+</html>

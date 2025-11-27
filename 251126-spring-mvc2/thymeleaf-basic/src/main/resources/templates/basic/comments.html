@@ -1,0 +1,23 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Comments</title>
+</head>
+<body>
+<!-- HTML 주석: 브라우저에도 보임 -->
+<!-- original span example -->
+
+<!--/* Thymeleaf 주석: 렌더링 시 완전히 제거됨
+<span th:text="${data}">html data</span>
+*/-->
+
+<!-- Prototype-only comment (브라우저에서만 참고용) -->
+<!-- th:text="${data}" -->
+<span>html data</span>
+
+<!-- Parser-level comment: 값 테스트용, 결과 HTML에는 안 나옴 -->
+/*[[ ${data} ]]*/
+
+</body>
+</html>

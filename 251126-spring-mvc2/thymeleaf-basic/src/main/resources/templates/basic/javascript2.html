@@ -1,0 +1,30 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Javascript2</title>
+</head>
+<body>
+<script th:inline="javascript">
+    [# th:each="user, stat: ${userList}"]
+    var user[[${stat.count}]] = [[${user}]];
+    [/]
+</script>
+<ul id="userList"></ul>
+<script th:inline="javascript">
+    var users = [];
+
+    [# th:each="user, stat: ${userList}"]
+    users.push([[${user}]]);
+    [/]
+
+    const ul = document.getElementById("userList");
+
+    users.forEach(function(u) {
+        const li = document.createElement("li");
+        li.textContent = u.username;   // 객체 그대로 출력하면 [object Object]가 보이므로 username을 꺼내야 함
+        ul.appendChild(li);
+    });
+</script>
+</body>
+</html>

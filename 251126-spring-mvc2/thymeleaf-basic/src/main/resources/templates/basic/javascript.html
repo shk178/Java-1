@@ -1,0 +1,21 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Javascript</title>
+</head>
+<body>
+<!-- 자바스크립트 인라인x -->
+<script>
+    var username = [[${user.username}]];
+    var username2 = /*[[${user.username}]]*/"test";
+    var user= [[${user}]];
+</script>
+<!-- 자바스크립트 인라인o -->
+<script th:inline="javascript">
+    var username = [[${user.username}]];
+    var username2 = /*[[${user.username}]]*/"test";
+    var user= [[${user}]];
+</script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE HTML>
+<!--suppress HtmlDeprecatedAttribute -->
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Condition</title>
+</head>
+<body>
+<table border="1">
+    <tr>
+        <th>username</th>
+    </tr>
+    <tr th:each="user : ${userList}">
+        <td th:text="${user.username}">username</td>
+    </tr>
+</table>
+<table border="1">
+    <tr>
+        <th>count</th>
+        <th>username</th>
+        <th>if, unless</th>
+        <th>switch</th>
+    </tr>
+    <tr th:each="user, userStat: ${userList}">
+        <td th:text="${userStat.count}">count</td>
+        <td th:text="${user.username}">username</td>
+        <td>
+            <span th:text="'count가 1이다.'" th:if="${userStat.count == 1}"></span>
+            <span th:text="'count가 1이 아니다.'" th:unless="${userStat.count == 1}"></span>
+        </td>
+        <td th:switch="${user.username}">
+            <span th:case="A">username이 A다.</span>
+            <span th:case="*">username이 A가 아니다.</span>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

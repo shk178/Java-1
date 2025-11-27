@@ -1,0 +1,15 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Block</title>
+</head>
+<body>
+<th:block th:each="user, userStat: ${userList}">
+    <div>
+        <span th:text="${userStat.count}"></span>
+        <span th:text="${user.username}"></span>
+    </div>
+</th:block>
+</body>
+</html>
