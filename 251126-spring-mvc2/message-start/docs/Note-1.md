@@ -370,3 +370,245 @@ NoSuchMessageException
 * Spring Boot에서 메시지 관리 팁
 
 같은 것도 보여줄게.
+
+스프링 부트에서 **메시지 소스(MessageSource)** 를 설정하는 방법은 크게 두 가지입니다.
+
+1. **기본 설정 사용 (application.properties/yml 활용)**
+2. **Java Config로 직접 Bean 등록**
+
+아래에 두 방식 모두 정리해드립니다.
+
+---
+
+## 1. 기본 설정 사용 (application.yml / application.properties)
+
+스프링 부트는 기본적으로 `messages.properties` 파일을 메시지 소스로 사용합니다.
+파일 위치는 `src/main/resources/messages.properties`.
+
+### application.yml 예시
+
+```yaml
+spring:
+  messages:
+    basename: messages, errors   # 여러 파일 지정 가능 (messages.properties, errors.properties)
+    encoding: UTF-8
+    fallback-to-system-locale: false
+```
+
+### application.properties 예시
+
+```properties
+spring.messages.basename=messages,errors
+spring.messages.encoding=UTF-8
+spring.messages.fallback-to-system-locale=false
+```
+
+**파일 구조 예시**
+
+```
+src/main/resources/
+ ├─ messages.properties
+ ├─ messages_ko.properties
+ └─ errors.properties
+```
+
+---
+
+## 2. Java Config로 직접 MessageSource Bean 등록
+
+스프링 부트의 자동 설정을 커스터마이징하고 싶다면 `@Configuration` 클래스를 만들어 직접 설정할 수 있습니다.
+
+```java
+@Configuration
+public class MessageSourceConfig {
+
+    @Bean
+    public MessageSource messageSource() {
+        ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
+        messageSource.setBasenames("messages", "errors");
+        messageSource.setDefaultEncoding("UTF-8");
+        messageSource.setFallbackToSystemLocale(false);
+        return messageSource;
+    }
+}
+```
+
+스프링 부트는 `MessageSource` 빈이 등록되면 자동 설정을 무시하고 **직접 등록한 설정을 사용**합니다.
+
+---
+
+## 3. 설정 후 메시지 사용 예시
+
+### 컨트롤러 혹은 서비스에서
+
+```java
+@Autowired
+private MessageSource messageSource;
+
+public void test() {
+    String msg = messageSource.getMessage("hello", null, Locale.KOREA);
+    System.out.println(msg);
+}
+```
+
+### messages.properties
+
+```
+hello=안녕하세요
+```
+
+---
+
+## 4. 국제화(i18n) 적용 시
+
+웹에서 언어 변경을 허용하려면 `LocaleResolver` 와 `LocaleChangeInterceptor` 를 설정합니다.
+
+```java
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Bean
+    public LocaleResolver localeResolver() {
+        SessionLocaleResolver resolver = new SessionLocaleResolver();
+        resolver.setDefaultLocale(Locale.KOREA);
+        return resolver;
+    }
+
+    @Bean
+    public LocaleChangeInterceptor localeChangeInterceptor() {
+        LocaleChangeInterceptor interceptor = new LocaleChangeInterceptor();
+        interceptor.setParamName("lang"); // ?lang=en
+        return interceptor;
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(localeChangeInterceptor());
+    }
+}
+```
+
+브라우저 요청 예시
+
+```
+GET /home?lang=en
+```
+
+---
+
+원하시면 아래도 추가 설명 드릴 수 있습니다.
+
+* 메시지 파일 캐싱 설정 (개발 시 자동 리로드)
+* Validation 메시지와 통합하는 방법
+* Thymeleaf에서 #{key} 형태로 사용하기
+* 국제화 구조 예시 프로젝트 템플릿
+
+필요한 부분 말씀해주시면 이어서 자세히 설명드리겠습니다.
+
+`spring.messages.basename=messages,config.i18n.messages`
+이 설정은 **스프링 부트가 사용할 메시지 파일들의 기본 이름(basename)을 여러 개 지정한 것**입니다.
+
+즉, 스프링이 메시지를 찾을 때 아래 두 경로에서 읽어오도록 설정한 것입니다.
+
+1. `messages`
+2. `config/i18n/messages`
+
+정확히 어떻게 해석되는지 아래에서 설명드립니다.
+
+---
+
+# 1. basename의 의미
+
+`basename` 은 메시지 파일의 **prefix(경로 포함)** 을 뜻합니다.
+확장자(.properties)는 자동으로 붙습니다.
+
+따라서 아래 설정
+
+```
+spring.messages.basename=messages,config.i18n.messages
+```
+
+은 다음 파일들을 메시지 소스로 사용하라는 의미입니다.
+
+---
+
+# 2. 실제로 로딩되는 파일들
+
+스프링은 각 basename에 대해 **Locale별 변형 파일을 모두 자동으로 탐색합니다.**
+
+## 첫 번째 basename: `messages`
+
+찾는 파일 예:
+
+```
+classpath:/messages.properties
+classpath:/messages_ko.properties
+classpath:/messages_en.properties
+...
+```
+
+## 두 번째 basename: `config.i18n.messages`
+
+`.` 은 디렉토리 구분자로 해석되므로 실제 경로는:
+
+```
+config/i18n/messages.properties
+config/i18n/messages_ko.properties
+config/i18n/messages_en.properties
+...
+```
+
+예시 경로 (Spring Boot 기본 resource root 기준):
+
+```
+src/main/resources/config/i18n/messages.properties
+src/main/resources/config/i18n/messages_ko.properties
+...
+```
+
+---
+
+# 3. 여러 basename을 지정한 이유
+
+보통 아래와 같은 경우에 여러 basename을 사용합니다.
+
+### 1) 메시지를 역할/도메인별로 분리하고 싶을 때
+
+* `messages.properties` → 기본 메시지
+* `config/i18n/messages.properties` → 국제화 리소스를 구조적으로 정리
+
+### 2) 라이브러리별 메시지와 프로젝트 메시지를 분리할 때
+
+```
+messages.properties           // 공통 메시지
+config/i18n/messages.properties // 화면/UI 국제화 메시지
+```
+
+### 3) 여러 프로젝트 구조를 통합할 때
+
+기존 메시지 파일을 그대로 두면서 새로운 경로에 추가 메시지 파일을 배치할 수 있습니다.
+
+---
+
+# 4. 우선순위
+
+여러 basename을 지정했다면 **앞에 선언된 파일이 먼저 로딩되며**, 같은 키가 중복될 경우 **가장 마지막 basename이 우선합니다.**
+
+즉, 아래의 경우:
+
+```
+spring.messages.basename=messages,config.i18n.messages
+```
+
+`config.i18n.messages` 가 `messages` 보다 높은 우선순위를 가집니다.
+
+---
+
+필요하시면 다음도 설명드릴 수 있습니다.
+
+* 메시지 파일 병합 방식(override 규칙)
+* 스프링 부트가 basename을 실제로 탐색하는 경로 구조
+* yml로 동일하게 설정하는 방법
+* 프로젝트에서 다국어 구조를 정리하는 베스트 프랙티스
+
+어떤 부분이 더 궁금하신가요?
