@@ -359,3 +359,143 @@ FieldError를 직접 생성하는 방식은 잘 안 씁니다.
 
 원하시면 지금 작성 중인 검증 로직(Map 방식)을
 BindingResult + rejectValue() 기반 구조로 완전히 리팩토링해드릴게요.
+
+결론부터 말하면,
+
+**네. BindingResult → FieldError → #fields 에 “거부된 값(rejectedValue)”이 보이게 하려면
+FieldError 내부에 rejectedValue 가 들어 있어야 합니다.**
+
+하지만
+**반드시 직접 넣을 필요는 없습니다.**
+스프링이 자동으로 넣어주는 경우도 있고,
+개발자가 직접 FieldError 를 만들 때만 신경 쓰면 됩니다.
+
+아래에서 상황별로 정확하게 정리해드릴게요.
+
+---
+
+# 1. 스프링이 자동으로 오류를 만들면 rejectedValue도 자동 저장됨
+
+예: price=int 필드인데 “abc” 같은 문자열을 입력한 경우
+
+컨트롤러:
+
+```java
+@PostMapping("/add")
+public String addItem(@ModelAttribute("item") Item item,
+                      BindingResult bindingResult) {
+    …
+}
+```
+
+폼에서 price = "abc" 를 보내면 스프링이 바인딩 오류를 만듭니다.
+
+이때 FieldError 내부에는:
+
+```
+rejectedValue = "abc"
+```
+
+이걸 바탕으로 Thymeleaf에서 입력값이 유지되고
+#fields.rejectedValue('price') 로도 접근이 가능합니다.
+
+즉, **타입 변환 오류나 바인딩 오류는 스프링이 rejectedValue를 자동으로 채운다.**
+
+따로 넣을 필요 없음.
+
+---
+
+# 2. rejectValue() 를 쓰면 rejectedValue 자동 저장
+
+예:
+
+```java
+bindingResult.rejectValue("price", "range", "가격 오류");
+```
+
+여기서 rejectedValue 를 넘기지 않았는데도
+BindingResult 내부에는 자동으로 다음 값이 들어갑니다:
+
+```
+rejectedValue = item.getPrice()
+```
+
+즉, 검증 대상 객체의 해당 필드 값이 자동으로 들어간다는 뜻입니다.
+
+그래서 입력값이 화면에 그대로 유지됩니다.
+
+---
+
+# 3. 개발자가 FieldError 를 “직접 생성”할 때만 rejectedValue 를 넣어줘야 한다
+
+예:
+
+```java
+bindingResult.addError(
+    new FieldError("item", "price", item.getPrice(),
+                   false, null, null,
+                   "가격이 1000~2000 범위가 아닙니다.")
+);
+```
+
+여기서 `item.getPrice()`가 바로 rejectedValue 입니다.
+
+만약 이 값을 null 로 넣으면:
+
+* 화면에 입력값이 유지되지 않음
+* #fields.rejectedValue('price') 도 null
+
+즉, **수동 생성 시에는 rejectedValue 를 꼭 넣어야 값이 유지됨.**
+
+---
+
+# 4. rejectedValue 는 어디에 쓰이나?
+
+Thymeleaf에서 입력값을 유지하는 기능:
+
+```html
+<input th:field="*{price}">
+```
+
+이 입력 필드의 value는 다음 우선순위로 결정됩니다.
+
+1. **오류 발생 시, rejectedValue**
+2. 정상 바인딩된 item.price 값
+
+즉, 사용자가 입력한 “잘못된 값”을 화면에 그대로 보여줄 때
+반드시 rejectedValue 가 필요합니다.
+
+---
+
+# 5. 정리
+
+## ✔ rejectedValue가 필요한 경우
+
+개발자가 FieldError 를 직접 만드는 경우
+
+```java
+new FieldError("item", "price", item.getPrice(), …)
+```
+
+## ✔ rejectedValue를 직접 안 넣어도 되는 경우
+
+* 스프링이 바인딩 오류 자동 생성
+* rejectValue() 사용
+* Validator 사용(errors.rejectValue())
+
+이런 경우 모두 스프링이 rejectedValue를 알아서 넣어줌.
+
+---
+
+# 결론
+
+### 질문: “오류 값을 fields에 저장하려면 rejectedValue 인자에 값을 써야 돼?”
+
+* **직접 FieldError를 만들 때만 넣어야 함**
+* rejectValue(), Validator, 바인딩 오류 등에서는 **자동으로 들어감**
+* 그래서 일반적으로는 rejectedValue를 직접 넣을 일이 거의 없음
+
+---
+
+지금 작성 중인 오류 처리 방식(Map→BindingResult)으로 옮긴 코드를 보여주시면
+어떤 방식으로 rejectedValue가 동작할지 최종 구조를 정확히 짚어드릴게요.

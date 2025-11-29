@@ -67,6 +67,7 @@ public class ValidationItemControllerV1 {
         return "redirect:/validation/v1/items/{itemId}";
     }
      */
+    /*
     @PostMapping("/add")
     public String addItem(
             @ModelAttribute Item item,
@@ -83,6 +84,60 @@ public class ValidationItemControllerV1 {
         if (item.getQuantity() == null || item.getQuantity() < 1 || item.getQuantity() > 10) {
             bindingResult.addError(new FieldError("item", "quantity", "수량 1 ~ 10 입력"));
         }
+        // 검증 실패 -> 다시 입력 폼으로
+        if (bindingResult.hasErrors()) {
+            return "validation/v1/addForm";
+        }
+        // 성공 로직
+        Item savedItem = itemRepository.save(item);
+        redirectAttributes.addAttribute("itemId", savedItem.getId());
+        redirectAttributes.addAttribute("status", true);
+        return "redirect:/validation/v1/items/{itemId}";
+    }
+     */
+    /*
+    @PostMapping("/add")
+    public String addItem(
+            @ModelAttribute Item item,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes
+    ) {
+        // 검증 로직
+        if (!StringUtils.hasText(item.getItemName())) {
+            bindingResult.addError(
+                    new FieldError("item", "itemName", item.getItemName(), false, new String[]{"required.item.itemName"}, null, null)
+            );
+        }
+        if (item.getPrice() == null || item.getPrice() < 1_000 || item.getPrice() > 2_000) {
+            bindingResult.addError(
+                    new FieldError("item", "price", item.getPrice(), false, new String[]{"range.item.price"}, new Object[]{1_000, 2_000}, null)
+            );
+        }
+        if (item.getQuantity() == null || item.getQuantity() < 1 || item.getQuantity() > 10) {
+            bindingResult.addError(
+                    new FieldError("item", "quantity", item.getQuantity(), false, new String[]{"range.item.quantity"}, new Object[]{1, 10}, null)
+            );
+        }
+        // 검증 실패 -> 다시 입력 폼으로
+        if (bindingResult.hasErrors()) {
+            return "validation/v1/addForm";
+        }
+        // 성공 로직
+        Item savedItem = itemRepository.save(item);
+        redirectAttributes.addAttribute("itemId", savedItem.getId());
+        redirectAttributes.addAttribute("status", true);
+        return "redirect:/validation/v1/items/{itemId}";
+    }
+     */
+    private final ItemValidator itemValidator;
+    @PostMapping("/add")
+    public String addItem(
+            @ModelAttribute Item item,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes
+    ) {
+        // 검증 로직
+        itemValidator.validate(item, bindingResult);
         // 검증 실패 -> 다시 입력 폼으로
         if (bindingResult.hasErrors()) {
             return "validation/v1/addForm";
