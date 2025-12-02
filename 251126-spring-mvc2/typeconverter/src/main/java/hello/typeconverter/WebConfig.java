@@ -10,5 +10,6 @@ public class WebConfig implements WebMvcConfigurer {
     public void addFormatters(FormatterRegistry registry) {
         //registry.addConverter(new CustomConverter());
         registry.addConverter(new StringToOneConverter());
+        registry.addFormatter(new MyNumberFormatter());
     }
 }

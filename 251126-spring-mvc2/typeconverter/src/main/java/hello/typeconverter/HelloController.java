@@ -28,5 +28,7 @@ public class HelloController {
         return one;
         // http://localhost:8080/convert-3?oneInt=1&oneInteger=10&oneString=ABC
         // {"oneInt":1,"oneInteger":10,"oneString":"ABC"}
+        // http://localhost:8080/convert-3?oneInt=1&oneInteger=1,000&oneString=ABC
+        // {"oneInt":1,"oneInteger":1000,"oneString":"ABC"}
     }
 }

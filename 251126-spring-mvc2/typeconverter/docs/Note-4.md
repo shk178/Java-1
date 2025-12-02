@@ -503,3 +503,288 @@ public class WebConfig implements WebMvcConfigurer {
 * DataBinder에 ConversionService가 어떻게 연결되는지
 * HandlerMethodArgumentResolver 단계에서 Formatter가 어느 타이밍에 호출되는지
   이런 내부 흐름도 더 깊이 설명해줄 수 있다.
+
+아래 내용은 **Spring MVC의 `Formatter<Number>`를 등록했을 때, 컨트롤러에서 어떻게 적용되는지**를 구체적으로 설명한다.
+
+---
+
+# 1. Formatter 등록 방식
+
+## 1) `WebMvcConfigurer`에서 등록
+
+```java
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addFormatters(FormatterRegistry registry) {
+        registry.addFormatter(new MyNumberFormatter());
+    }
+}
+```
+
+이렇게 등록하면 **Spring MVC 전역 변환기/포매터 체인에 포함**된다.
+
+---
+
+# 2. 컨트롤러에서 어떻게 적용되는가?
+
+## 핵심 요약
+
+* `@RequestParam`, `@PathVariable`, `@ModelAttribute`로 **문자열을 Number 타입으로 바꿀 때** 자동 적용된다.
+* 반환값을 **응답으로 출력할 때(Number → String)** 도 `print()`가 적용된다.
+* 별도의 어노테이션 작성이 필요 없다.
+
+---
+
+# 3. 구체적 사용 예시
+
+## 예시 1: RequestParam 적용
+
+```java
+@GetMapping("/test1")
+public String test1(@RequestParam Number amount) {
+    System.out.println("amount = " + amount);
+    return "ok";
+}
+```
+
+요청:
+
+```
+/test1?amount=1,234
+```
+
+동작:
+
+* "1,234" → `parse()` 호출 → Number 값 반환
+
+---
+
+## 예시 2: PathVariable 적용
+
+```java
+@GetMapping("/test2/{amount}")
+public String test2(@PathVariable Number amount) {
+    System.out.println("amount = " + amount);
+    return "ok";
+}
+```
+
+요청:
+
+```
+/test2/1,234
+```
+
+동작:
+
+* PathVariable 값 "1,234" → `parse()` 적용
+
+---
+
+## 예시 3: ModelAttribute 적용
+
+```java
+public static class Form {
+    private Number price;
+    // getter/setter
+}
+
+@PostMapping("/test3")
+public String test3(@ModelAttribute Form form) {
+    System.out.println("price = " + form.getPrice());
+    return "ok";
+}
+```
+
+요청:
+
+```
+price=1,234.56
+```
+
+동작:
+
+* 필드 타입이 Number이므로 Form 바인딩 시 `Formatter<Number>`가 사용된다.
+
+---
+
+## 예시 4: 응답 직렬화에도 적용
+
+```java
+@GetMapping("/test4")
+public Number test4() {
+    return 1234.5;
+}
+```
+
+응답:
+
+```
+1,234.5
+```
+
+`print()`가 적용되어 문자열로 변환된다
+
+(단, `@ResponseBody`에서 JSON으로 응답하면 Jackson이 처리하므로 Formatter는 적용되지 않는다)
+
+---
+
+# 4. ModelAttribute 객체에서 복합 타입 안에도 적용됨
+
+```java
+public class OrderForm {
+    private Number quantity;
+    private Number price;
+}
+```
+
+이 경우에도 두 필드 모두 `MyNumberFormatter`가 적용된다.
+
+---
+
+# 5. 무엇을 안 해도 되나?
+
+* 컨트롤러에 `@InitBinder` 필요 없음
+* `@Formatter` 같은 것은 Spring에는 없다
+* 파라미터마다 별도 설정 필요 없음
+
+**"등록만 하면 전역 적용"** 이 원칙이다.
+
+---
+
+# 6. 만약 특정 컨트롤러/핸들러에서만 적용하고 싶다면?
+
+`@InitBinder`를 이용해서 원하는 `Formatter`만 선택적으로 등록할 수도 있다:
+
+```java
+@InitBinder
+public void init(WebDataBinder binder) {
+    binder.addCustomFormatter(new MyNumberFormatter());
+}
+```
+
+하지만 질문 내용은 **전역 등록**이므로 필요 없다.
+
+---
+
+# 정리
+
+Formatter 등록 후에는 컨트롤러가 아래처럼 자연스럽게 작성될 뿐이고, 별도 설정 없이 파라미터 타입이 Number일 때 자동으로 포매팅이 적용된다:
+
+```java
+@GetMapping("/example")
+public String example(@RequestParam Number num) {
+    …
+}
+```
+
+---
+
+원하면 **Converter와 Formatter가 언제 선택되는지**, **우선순위**, **JSON과의 관계**, **ConverterFactory와의 차이**도 정리해줄 수 있다.
+
+결론부터 말하면 **맞다**.
+`1,000`이 `1000`으로 정상 변환된 이유는 **`MyNumberFormatter`가 작동했기 때문**이다.
+
+---
+
+# 왜 Formatter가 사용되었는가?
+
+## 1. 조건 충족
+
+`MyNumberFormatter`는 다음 타입을 처리한다고 선언했다.
+
+```java
+public class MyNumberFormatter implements Formatter<Number>
+```
+
+즉, **모든 Number 타입(Integer, Long, Short, Double 등)을 처리**할 수 있다.
+
+그리고 컨트롤러의 ModelAttribute 바인딩에서 One 객체의 필드가 다음과 같이 되어 있다고 가정하면:
+
+```java
+public class One {
+    private Integer oneInt;
+    private Integer oneInteger;
+    private String oneString;
+}
+```
+
+여기서 `oneInt`와 `oneInteger`는 **Number 계열 타입** → Formatter 대상.
+
+---
+
+# 실제 수행 흐름
+
+요청:
+
+```
+/convert-3?oneInt=1&oneInteger=1,000&oneString=ABC
+```
+
+Spring 바인딩 과정:
+
+1. HTTP 요청 파라미터 `"1"` → Integer로 변환
+2. `"1,000"` → Integer로 변환
+3. `"ABC"` → String 그대로 매핑
+
+이때 `"1,000"` → Integer 변환을 위해 Spring은 먼저 **Formatter/Converter 체인을 검색**한다.
+
+검색 순서:
+
+1. **PropertyEditor** (구버전)
+2. **Formatter**
+3. **Converter**
+
+전역 등록된 `MyNumberFormatter`가 Number 타입에 매칭되므로 `parse()`가 실행된다.
+
+---
+
+# 실제로 호출된 메서드
+
+요청 파라미터가 들어올 때 실행되는 메서드:
+
+```java
+@Override
+public Number parse(String text, Locale locale) throws ParseException {
+    NumberFormat format = NumberFormat.getInstance(locale);
+    return format.parse(text);
+}
+```
+
+여기서 `NumberFormat.getInstance(locale)`는 `"1,000"` 문자열을 자동으로 파싱해서 **정수 1000**을 반환한다.
+
+---
+
+# 확인 포인트
+
+렌더링 결과:
+
+```json
+{"oneInt":1,"oneInteger":1000,"oneString":"ABC"}
+```
+
+이 중 `oneInteger`가 `"1,000"` → `1000`으로 변한 이유는 **Formatter가 문자열 → Number 로 바꾸어 저장**했기 때문이다.
+
+---
+
+# 만약 MyNumberFormatter가 없다면?
+
+기본적으로 Spring의 기본 Converter는 `"1,000"`처럼 콤마 포함 문자열을 Integer로 바꾸지 못한다.
+
+즉, **커스텀 Formatter가 없으면 400 에러**가 난다.
+
+따라서 지금 정상 동작했다면 **Formatter가 확실하게 개입한 것이다.**
+
+---
+
+# 정리
+
+* `@ModelAttribute` 바인딩 시 Number 타입 필드는 **Formatter<Number>**의 `parse()`가 호출된다.
+* `"1,000"` → `1000`으로 나타난 것은 **MyNumberFormatter의 parse()가 실행된 결과**.
+* JSON 응답에서는 Jackson이 Number 그대로 출력하므로 1000으로 보인다.
+
+---
+
+필요하면 **Formatter와 Converter의 우선순위**, **둘의 선택 기준**, **JSON 변환 시 작동 여부**, **복합룰 적용 구조**까지 상세하게 정리해줄까?
