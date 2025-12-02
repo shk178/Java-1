@@ -6,13 +6,14 @@ import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
-//@Component
+@Component
 public class WSCustomizer implements WebServerFactoryCustomizer<ConfigurableWebServerFactory> {
     @Override
     public void customize(ConfigurableWebServerFactory factory) {
         System.out.println(this.getClass() + ".customize");
         ErrorPage errorPageRe = new ErrorPage(RuntimeException.class, "/error-page/Re");
         ErrorPage errorPage404 = new ErrorPage(HttpStatus.NOT_FOUND, "/error-page/404");
-        factory.addErrorPages(errorPageRe, errorPage404);
+        ErrorPage errorPage400 = new ErrorPage(HttpStatus.BAD_REQUEST, "/error-page/400");
+        factory.addErrorPages(errorPageRe, errorPage404, errorPage400);
     }
 }

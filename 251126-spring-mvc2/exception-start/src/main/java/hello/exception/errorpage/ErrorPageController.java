@@ -46,4 +46,8 @@ public class ErrorPageController {
         System.out.println(this.getClass() + ".second404");
         return "404";
     }
+    @RequestMapping("/error-page/400")
+    public String second400() {
+        return "api/400-2";
+    }
 }
