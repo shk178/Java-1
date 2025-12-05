@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Item 등록</title>
+</head>
+<body>
+
+<h1>Item 등록</h1>
+
+<!--
+    model 속성 이름: itemRequest (ItemRequest DTO)
+    파일 업로드를 위해 반드시 enctype="multipart/form-data" 필요
+-->
+<form th:action="@{/items/new}"
+      th:object="${itemRequest}"
+      method="post"
+      enctype="multipart/form-data">
+
+    <!-- 이름 입력 -->
+    <div>
+        <label for="requestItemName">상품 이름</label>
+        <input type="text"
+               id="requestItemName"
+               th:field="*{requestItemName}"/>
+    </div>
+
+    <!-- 단일 첨부파일 -->
+    <div>
+        <label for="uploadedAttachment">첨부 파일</label>
+        <input type="file"
+               id="uploadedAttachment"
+               th:field="*{uploadedAttachment}"/>
+    </div>
+
+    <!-- 여러 이미지 파일 -->
+    <div>
+        <label for="uploadedImages">이미지 파일들</label>
+        <input type="file"
+               id="uploadedImages"
+               th:field="*{uploadedImages}"
+               multiple="multiple"/>
+    </div>
+
+    <div>
+        <button type="submit">등록</button>
+    </div>
+</form>
+
+</body>
+</html>

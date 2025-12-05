@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Item 상세</title>
+</head>
+<body>
+
+<h1>Item 상세</h1>
+
+<!-- model 속성 이름: item (ItemResponse) -->
+<div th:object="${item}">
+
+    <div>
+        <span>아이템 ID: </span>
+        <span th:text="*{responseItemId}">1</span>
+    </div>
+
+    <div>
+        <span>아이템 이름: </span>
+        <span th:text="*{responseItemName}">샘플 아이템</span>
+    </div>
+
+    <hr/>
+
+    <!-- 첨부파일 영역 -->
+    <div>
+        <h3>첨부 파일</h3>
+
+        <!-- 첨부파일이 있는 경우에만 표시 -->
+        <div th:if="*{attachmentDownloadUrl} != null">
+            <a th:href="*{attachmentDownloadUrl}"
+               th:text="*{attachmentOriginalName}">
+                첨부파일 다운로드
+            </a>
+        </div>
+
+        <!-- 첨부파일이 없는 경우 -->
+        <div th:if="*{attachmentDownloadUrl} == null">
+            첨부 파일이 없습니다.
+        </div>
+    </div>
+
+    <hr/>
+
+    <!-- 이미지 영역 -->
+    <div>
+        <h3>이미지 파일들</h3>
+
+        <!-- 이미지가 있는 경우 -->
+        <div th:if="*{imageUrls} != null and *{imageUrls.size()} > 0">
+
+            <div th:each="url, iterStat : *{imageUrls}">
+                <!-- 이미지 원본 이름: 같은 index의 imageOriginalNames 요소 사용 -->
+                <div>
+                    <span>이미지 이름: </span>
+                    <span th:text="*{imageOriginalNames[__${iterStat.index}__]}">
+                        sample.png
+                    </span>
+                </div>
+
+                <!-- 실제 이미지 출력 -->
+                <div>
+                    <img th:src="${url}" alt="image" style="max-width: 300px; max-height: 300px;"/>
+                </div>
+
+                <hr/>
+            </div>
+        </div>
+
+        <!-- 이미지가 없는 경우 -->
+        <div th:if="*{imageUrls} == null or *{imageUrls.size()} == 0">
+            이미지 파일이 없습니다.
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
