@@ -1,0 +1,46 @@
+package jdbc.except;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Repository;
+
+@Repository
+@RequiredArgsConstructor
+public class MemberRepository2 implements MemberRepository {
+    private final JdbcTemplate jdbcTemplate;
+
+    @Override
+    public Member save(Member member) {
+        String sql = "insert into member (member_id, money) values (?, ?)";
+        jdbcTemplate.update(sql, member.getMemberId(), member.getMoney());
+        return member;
+    }
+
+    private RowMapper<Member> memberRowMapper() {
+        return (rs, rowNum) -> {
+            Member member = new Member();
+            member.setMemberId(rs.getString("member_id"));
+            member.setMoney(rs.getInt("money"));
+            return member;
+        };
+    }
+
+    @Override
+    public Member findById(String memberId) {
+        String sql = "select * from member where member_id = ?";
+        return jdbcTemplate.queryForObject(sql, memberRowMapper(), memberId);
+    }
+
+    @Override
+    public void update(String memberId, int money) {
+        String sql = "update member set money = ? where member_id = ?";
+        jdbcTemplate.update(sql, money, memberId);
+    }
+
+    @Override
+    public void delete(String memberId) {
+        String sql = "delete from member where member_id = ?";
+        jdbcTemplate.update(sql, memberId);
+    }
+}

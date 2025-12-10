@@ -93,7 +93,7 @@ public class MemberRepository1 implements MemberRepository {
             con = DataSourceUtils.getConnection(dataSource);
             pstmt = con.prepareStatement(sql);
             pstmt.setString(1, memberId);
-            pstmt.executeQuery();
+            pstmt.executeUpdate();
         } catch (SQLException e) {
             throw new MyDBException(e);
         } finally {
