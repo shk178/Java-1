@@ -14,7 +14,10 @@ import javax.sql.DataSource;
 
 //@Import(MemoryConfig.class)
 //@Import(JTConfig.class)
-@Import(MBConfig.class)
+//@Import(MBConfig.class)
+//@Import(JPAConfig.class)
+//@Import(SDJPAConfig.class)
+@Import(QConfig.class)
 @SpringBootApplication(scanBasePackages = "hello.itemservice.web")
 public class ItemServiceApplication {
 
