@@ -21,3 +21,7 @@
 ```
 - 스프링 AOP: AbstractAutoProxyCreator, AnnotationAwareAspectJAutoProxyCreator가 Advisor가 있으면 프록시를 생성해서 반환하고 아니면 원본 빈을 반환한다. (포인트컷에 클래스나 메서드가 맞으면 프록시 적용)
 - 스프링 AOP로만 프록시를 만들면 프록시는 1개이고 어드바이스->인터셉터 여러 개가 메서드 체인으로 실행된다.
+- @Aspect는 컨테이너 초기화 중 AnnotationAwareAspectJAutoProxyCreator라는 빈 후처리기에 의해 Advisor로 변환되고, 각 빈이 생성될 때 해당 Advisor가 적용 가능하면 프록시로 만들어진다.
+- @Aspect도 일반 빈이라서 생성 순서가 달라질 수 있지만, 빈 후처리기에서 Advisor의 메타데이터를 수집하는 것은 항상 먼저 된다.
+- @Aspect 하나에 여러 Advice 메서드가 선언될 수 있다. 각 Advice 메서드에 대해 Advisor가 1개 만들어진다.
+- Advisor는 빈이 아니라 AOP 인프라 객체로서 빈 후처리기 내부에서 메타데이터를 기반으로 필요 시 생성·캐싱되어 프록시가 공유한다.

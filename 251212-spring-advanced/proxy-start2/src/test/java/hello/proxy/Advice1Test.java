@@ -1,6 +1,5 @@
 package hello.proxy;
 
-import hello.proxy.app.v1.OrderService1;
 import hello.proxy.spring.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.aop.Pointcut;
