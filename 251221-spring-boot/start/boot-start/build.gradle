@@ -20,3 +20,19 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+task buildJar(type: Jar) {
+	manifest {
+		attributes 'Main-Class': 'hello.boot.EmbedTomcatMain2'
+	}
+	with jar
+}
+
+task buildFatJar(type: Jar) {
+	manifest {
+		attributes 'Main-Class': 'hello.boot.EmbedTomcatMain2'
+	}
+	duplicatesStrategy = DuplicatesStrategy.WARN
+	from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+	with jar
+}
