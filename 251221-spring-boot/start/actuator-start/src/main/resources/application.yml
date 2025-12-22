@@ -1,0 +1,9 @@
+logging:
+  level:
+    hello: debug
+---
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

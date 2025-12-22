@@ -1,0 +1,132 @@
+package hello;
+
+import java.util.Properties;
+
+public class JavaSystemProperties {
+    public static void main(String[] args) {
+        Properties properties = System.getProperties();
+        for (Object key : properties.keySet()) {
+            System.out.println("key = " + key);
+            System.out.println("String.valueOf(key) = " + String.valueOf(key));
+        }
+        String url = System.getProperty("url");
+        String username = System.getProperty("username");
+        String password = System.getProperty("password");
+        System.out.println("url = " + url);
+        System.out.println("username = " + username);
+        System.out.println("password = " + password);
+    }
+}
+/*
+key = java.specification.version
+String.valueOf(key) = java.specification.version
+key = sun.cpu.isalist
+String.valueOf(key) = sun.cpu.isalist
+key = sun.jnu.encoding
+String.valueOf(key) = sun.jnu.encoding
+key = java.class.path
+String.valueOf(key) = java.class.path
+key = java.vm.vendor
+String.valueOf(key) = java.vm.vendor
+key = sun.arch.data.model
+String.valueOf(key) = sun.arch.data.model
+key = user.variant
+String.valueOf(key) = user.variant
+key = password
+String.valueOf(key) = password
+key = java.vendor.url
+String.valueOf(key) = java.vendor.url
+key = java.vm.specification.version
+String.valueOf(key) = java.vm.specification.version
+key = os.name
+String.valueOf(key) = os.name
+key = sun.java.launcher
+String.valueOf(key) = sun.java.launcher
+key = user.country
+String.valueOf(key) = user.country
+key = sun.boot.library.path
+String.valueOf(key) = sun.boot.library.path
+key = sun.java.command
+String.valueOf(key) = sun.java.command
+key = jdk.debug
+String.valueOf(key) = jdk.debug
+key = sun.cpu.endian
+String.valueOf(key) = sun.cpu.endian
+key = user.home
+String.valueOf(key) = user.home
+key = user.language
+String.valueOf(key) = user.language
+key = java.specification.vendor
+String.valueOf(key) = java.specification.vendor
+key = java.version.date
+String.valueOf(key) = java.version.date
+key = java.home
+String.valueOf(key) = java.home
+key = file.separator
+String.valueOf(key) = file.separator
+key = java.vm.compressedOopsMode
+String.valueOf(key) = java.vm.compressedOopsMode
+key = line.separator
+String.valueOf(key) = line.separator
+key = java.vm.specification.vendor
+String.valueOf(key) = java.vm.specification.vendor
+key = java.specification.name
+String.valueOf(key) = java.specification.name
+key = user.script
+String.valueOf(key) = user.script
+key = sun.management.compiler
+String.valueOf(key) = sun.management.compiler
+key = java.runtime.version
+String.valueOf(key) = java.runtime.version
+key = user.name
+String.valueOf(key) = user.name
+key = path.separator
+String.valueOf(key) = path.separator
+key = os.version
+String.valueOf(key) = os.version
+key = java.runtime.name
+String.valueOf(key) = java.runtime.name
+key = file.encoding
+String.valueOf(key) = file.encoding
+key = java.vm.name
+String.valueOf(key) = java.vm.name
+key = java.vendor.version
+String.valueOf(key) = java.vendor.version
+key = java.vendor.url.bug
+String.valueOf(key) = java.vendor.url.bug
+key = java.io.tmpdir
+String.valueOf(key) = java.io.tmpdir
+key = java.version
+String.valueOf(key) = java.version
+key = user.dir
+String.valueOf(key) = user.dir
+key = os.arch
+String.valueOf(key) = os.arch
+key = java.vm.specification.name
+String.valueOf(key) = java.vm.specification.name
+key = url
+String.valueOf(key) = url
+key = sun.os.patch.level
+String.valueOf(key) = sun.os.patch.level
+key = native.encoding
+String.valueOf(key) = native.encoding
+key = java.library.path
+String.valueOf(key) = java.library.path
+key = java.vm.info
+String.valueOf(key) = java.vm.info
+key = java.vendor
+String.valueOf(key) = java.vendor
+key = java.vm.version
+String.valueOf(key) = java.vm.version
+key = java.specification.maintenance.version
+String.valueOf(key) = java.specification.maintenance.version
+key = sun.io.unicode.encoding
+String.valueOf(key) = sun.io.unicode.encoding
+key = java.class.version
+String.valueOf(key) = java.class.version
+key = username
+String.valueOf(key) = username
+url = devdb
+username = dev_user
+password = dev_pw
+ */
